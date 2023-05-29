@@ -54,7 +54,7 @@ if result.returncode == 0:
     print('No changes')
     sys.exit(0)
 
-output = result.stdout
+output = re.sub(r'(?s)^.*?@@.*?\n', '', result.stdout)  # remove diff header
 
 if len(output) > 5 * 1024 * 1024:
     print(f'The output diff is {len(output) / (1024 * 1024)}mb (the max is 5mb)')
@@ -64,8 +64,6 @@ output = run(['aha', '--word-wrap'], input=output, capture_output=True, encoding
 output = apply_repls(output, [
     # remove all of the header, add an id
     (1, r'(?s)<\?xml.*?<pre>', '<pre id=diff-cont dir=auto>'),
-    # remove diff header info
-    (1, r'<span style="font-weight:bold;color:dimgray;">.*', ''),
     # file positions; replace with a separator
     (1, r'<span style="color:teal;">@@.*', '<div class="sep">• • •</div>'),
     # use del/ins instead of colors
