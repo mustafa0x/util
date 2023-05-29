@@ -8,6 +8,7 @@ from subprocess import run
 from tempfile import NamedTemporaryFile
 import contextlib
 
+
 #################################################
 # Util
 #################################################
@@ -24,10 +25,10 @@ def apply_repls(text, repls):
         text = re.sub(r[1], r[2], text) if r[0] else text.replace(r[1], r[2])
     return text
 
-if len(sys.argv) < 3:
-    print('Usage: differ.py <file1> <file2>')
-    sys.exit(1)
 
+#################################################
+# Dependencies
+#################################################
 if not run(['which', 'aha'], capture_output=True).stdout:
     print('aha (https://github.com/theZiz/aha) is not installed, please install it')
     sys.exit(1)
@@ -38,9 +39,14 @@ if not viewer.exists():
     print('Downloading _diff_viewer.html')
     run(['curl', '-S', viewer_url, '-o', viewer.absolute()])
 
+
 #################################################
 # Main
 #################################################
+if len(sys.argv) < 3:
+    print('Usage: differ.py <file1> <file2>')
+    sys.exit(1)
+
 git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],!.""‹›^]+|[!.""‹›^,]']
 result = run(git_cmd + [sys.argv[1], sys.argv[2]], capture_output=True, encoding='utf-8')
 
@@ -63,8 +69,8 @@ output = apply_repls(output, [
     # file positions; replace with a separator
     (1, r'<span style="color:teal;">@@.*', '<div class="sep">• • •</div>'),
     # use del/ins instead of colors
-    (1, r'<span style="color:red;">(.*?)</span>', '<del>\1</del>'),
-    (1, r'<span style="color:green;">(.*?)</span>', '<ins>\1</ins>'),
+    (1, r'<span style="color:red;">(.*?)</span>', r'<del>\1</del>'),
+    (1, r'<span style="color:green;">(.*?)</span>', r'<ins>\1</ins>'),
 ])
 
 with tmpfile(suffix='.html') as diff_file:
