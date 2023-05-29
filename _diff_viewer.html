@@ -1,0 +1,104 @@
+<!doctype html>
+<meta charset=utf-8>
+<style>
+@font-face {
+  font-family: Kitab;
+  src: url(https://fonts.nuqayah.com/kitab-base.woff2?v3);
+  unicode-range: U+200?, U+618-61B, U+61F, U+621-63A, U+640-655, U+65C, U+660-66C, U+670-671, U+6CC, U+6D4, U+6D6-6ED, U+8F0-8F3;
+}
+body {
+  font-family: Kitab,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+  margin: 0;
+  white-space: pre-wrap;
+  padding: 10px;
+  font-size: 1.2rem;
+}
+
+.btns-cont {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.btns-cont button {
+  padding: 0.5rem 1rem;
+}
+.icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  vertical-align: middle;
+  color: inherit;
+  pointer-events: none;
+}
+
+pre#diff-cont {
+  max-width: 1000px;
+  margin: 0 auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+}
+
+ins, del {
+  transition: background-color 200ms, padding 200ms;
+  text-decoration: none;
+}
+ins { background: #c2ffc2 }
+del { background: #ffafaf }
+ins.active, del.active {
+  background-color: orange !important;
+  padding: 0.2rem 0.5rem;
+}
+.sep {
+  text-align: center;
+  font-size: 2rem;
+  margin: 1rem;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+}
+</style>
+
+<div class=btns-cont>
+  <button id=prev-change-btn><svg class=icon><use href=#icon-arrow-up /></svg></button>
+  <button id=next-change-btn><svg class=icon><use href=#icon-arrow-down /></svg></button>
+</div>
+
+<!-- SPLIT_AT -->
+
+<script>
+const $ = (s, cont) => (cont || document).querySelector(s)
+const $$ = (s, cont) => (cont || document).querySelectorAll(s)
+NodeList.prototype.__proto__ = Array.prototype
+Node.prototype.on = Node.prototype.addEventListener
+NodeList.prototype.on = function on() { this.forEach(n => n.on(...arguments)); }
+const int_clamp = (int, min, max) => Math.max(Math.min(int, max), min)
+
+let current_el = 0
+const els = $$('#diff-cont ins, del')
+
+function highlight_change(el) {
+    const dir = el.target.matches('#prev-change-btn') ? -1 : 1
+    if (!els.length)
+        return
+    current_el = int_clamp(current_el + dir, 0, els.length - 1)
+    els[current_el].scrollIntoView({behavior: 'smooth', block: 'center'})
+    els[current_el].classList.add('active')
+    els[current_el].addEventListener('transitionend', e => {
+        e.target.classList.remove('active')
+    }, {once: true})
+}
+
+$$('#prev-change-btn, #next-change-btn').on('click', highlight_change)
+$('#diff-cont').addEventListener('click', e => {
+    if (e.target.matches('ins, del'))
+        current_el = els.indexOf(e.target)
+})
+</script>
+<svg style="display:none">
+  <defs>
+    <symbol stroke=currentColor id=icon-arrow-up viewBox="0 0 24 24"><path stroke-linecap=round stroke-linejoin=round stroke-width=2 d="M7 11l5-5m0 0l5 5m-5-5v12" /></symbol>
+    <symbol stroke=currentColor id=icon-arrow-down viewBox="0 0 24 24"><path stroke-linecap=round stroke-linejoin=round stroke-width=2 d="M17 13l-5 5m0 0l-5-5m5 5V6" /></symbol>
+  </defs>
+</svg>
