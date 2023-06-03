@@ -4,7 +4,7 @@ import sys
 from time import sleep
 import regex as re
 from pathlib import Path
-from subprocess import run
+from subprocess import run as run_
 from tempfile import NamedTemporaryFile
 import contextlib
 
@@ -12,6 +12,8 @@ import contextlib
 #################################################
 # Util
 #################################################
+run = lambda cmd, **kwargs: run_(cmd, capture_output=True, encoding='utf-8', **kwargs)
+
 @contextlib.contextmanager
 def tmpfile(suffix=None):
     try:
@@ -29,7 +31,7 @@ def apply_repls(text, repls):
 #################################################
 # Dependencies
 #################################################
-if not run(['which', 'aha'], capture_output=True).stdout:
+if not run(['which', 'aha']).stdout:
     print('aha (https://github.com/theZiz/aha) is not installed, please install it')
     sys.exit(1)
 
@@ -48,7 +50,7 @@ if len(sys.argv) < 3:
     sys.exit(1)
 
 git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],!.""‹›^]+|[!.""‹›^,]']
-result = run(git_cmd + [sys.argv[1], sys.argv[2]], capture_output=True, encoding='utf-8')
+result = run(git_cmd + [sys.argv[1], sys.argv[2]])
 
 if result.returncode == 0:
     print('No changes')
@@ -60,7 +62,7 @@ if len(output) > 5 * 1024 * 1024:
     print(f'The output diff is {len(output) / (1024 * 1024)}mb (the max is 5mb)')
     sys.exit(1)
 
-output = run(['aha', '--word-wrap'], input=output, capture_output=True, encoding='utf-8').stdout
+output = run(['aha', '--word-wrap'], input=output).stdout
 output = apply_repls(output, [
     # remove all of the header, add an id
     (1, r'(?s)<\?xml.*?<pre>', '<pre id=diff-cont dir=auto>'),
