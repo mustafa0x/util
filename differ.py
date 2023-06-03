@@ -87,5 +87,9 @@ with nullcontext(Path(args.out)) if args.out else tmpfile(suffix='.html') as dif
     fh.write(output)
     fh.write(footer)
     fh.close()
-    run(['open', diff_file])
-    sleep(0.2)
+    try:
+        run(['open', diff_file])
+    except Exception:
+        pass
+    if not args.out:
+        sleep(0.1)  # give the browser a chance to open the file before deleting
