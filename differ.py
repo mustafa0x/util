@@ -6,7 +6,18 @@ import regex as re
 from pathlib import Path
 from subprocess import run as run_
 from tempfile import NamedTemporaryFile
-import contextlib
+from contextlib import contextmanager, nullcontext
+from argparse import ArgumentParser
+
+
+#################################################
+# Arguments
+#################################################
+parser = ArgumentParser()
+parser.add_argument('file-old', help='The old file')
+parser.add_argument('file-new', help='The new file')
+parser.add_argument('-o', '--out', help='Save the diff to this file')
+args = parser.parse_args()
 
 
 #################################################
@@ -14,7 +25,7 @@ import contextlib
 #################################################
 run = lambda cmd, **kwargs: run_(cmd, capture_output=True, encoding='utf-8', **kwargs)
 
-@contextlib.contextmanager
+@contextmanager
 def tmpfile(suffix=None):
     try:
         file = Path(NamedTemporaryFile(mode='w', suffix=suffix, delete=False).name)
@@ -45,10 +56,6 @@ if not viewer.exists():
 #################################################
 # Main
 #################################################
-if len(sys.argv) < 3:
-    print('Usage: differ.py <file1> <file2>')
-    sys.exit(1)
-
 git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],!.""‹›^]+|[!.""‹›^,]']
 result = run(git_cmd + [sys.argv[1], sys.argv[2]])
 
@@ -73,7 +80,7 @@ output = apply_repls(output, [
     (1, r'<span style="color:green;">(.*?)</span>', r'<ins>\1</ins>'),
 ])
 
-with tmpfile(suffix='.html') as diff_file:
+with nullcontext(Path(args.out)) if args.out else tmpfile(suffix='.html') as diff_file:
     fh = diff_file.open('w')
     header, footer = viewer.read_text().split('<!-- SPLIT_AT -->')
     fh.write(header + '\n')
