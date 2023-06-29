@@ -14,9 +14,10 @@ from argparse import ArgumentParser
 # Arguments
 #################################################
 parser = ArgumentParser()
-parser.add_argument('file-old', help='The old file')
-parser.add_argument('file-new', help='The new file')
+parser.add_argument('file_old', help='The old file')
+parser.add_argument('file_new', help='The new file')
 parser.add_argument('-o', '--out', help='Save the diff to this file')
+parser.add_argument('--max', help='The max size of the diff in mb', type=int, default=5)
 args = parser.parse_args()
 
 
@@ -56,8 +57,8 @@ if not viewer.exists():
 #################################################
 # Main
 #################################################
-git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],!.""‹›^]+|[!.""‹›^,]']
-result = run(git_cmd + [sys.argv[1], sys.argv[2]])
+git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],<>:!.""‘’“”?‹›()^]+|[!.""‘’“”?‹›()^,<>:]']
+result = run(git_cmd + [args.file_old, args.file_new])
 
 if result.returncode == 0:
     print('No changes')
@@ -65,8 +66,8 @@ if result.returncode == 0:
 
 output = re.sub(r'(?s)^.*?@@.*?\n', '', result.stdout)  # remove diff header
 
-if len(output) > 5 * 1024 * 1024:
-    print(f'The output diff is {len(output) / (1024 * 1024)}mb (the max is 5mb)')
+if len(output) > args.max * 1024 * 1024:
+    print(f'The output diff is {round(len(output) / (1024 * 1024), 2)}mb (the max is {args.max}mb)')
     sys.exit(1)
 
 output = run(['aha', '--word-wrap'], input=output).stdout
