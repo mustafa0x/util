@@ -15,7 +15,7 @@ host = sys.argv[1]
 remote_dir = sys.argv[2]
 git_files = run(['git', 'ls-files']).stdout[:-1].split('\n')
 remote_files = run(f'ssh {host} "find {remote_dir} -type f"', shell=True)
-remote_files = remote_files.stdout[:-1].replace(f'{remote_dir}/', '').split('\n')
+remote_files = remote_files.stdout[:-1].replace(f'{remote_dir.rstrip("/")}/', '').split('\n')
 
 for file in sorted(set(remote_files) - set(git_files)):
     if not run(['git', 'check-ignore', file]).stdout:
