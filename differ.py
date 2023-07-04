@@ -94,3 +94,5 @@ with nullcontext(Path(args.out)) if args.out else tmpfile(suffix='.html') as dif
         pass
     if not args.out:
         sleep(0.1)  # give the browser a chance to open the file before deleting
+
+sys.exit(1)
