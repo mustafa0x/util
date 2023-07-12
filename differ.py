@@ -84,6 +84,7 @@ output = apply_repls(output, [
 with nullcontext(Path(args.out)) if args.out else tmpfile(suffix='.html') as diff_file:
     fh = diff_file.open('w')
     header, footer = viewer.read_text().split('<!-- SPLIT_AT -->')
+    header += f'<title>{args.file_old} -> {args.file_new}</title>'
     fh.write(header + '\n')
     fh.write(output)
     fh.write(footer)
@@ -93,6 +94,6 @@ with nullcontext(Path(args.out)) if args.out else tmpfile(suffix='.html') as dif
     except Exception:
         pass
     if not args.out:
-        sleep(0.1)  # give the browser a chance to open the file before deleting
+        sleep(0.5)  # give the browser a chance to open the file before deleting
 
 sys.exit(1)
