@@ -63,6 +63,9 @@ result = run(git_cmd + [args.file_old, args.file_new])
 if result.returncode == 0:
     print('No changes')
     sys.exit(0)
+elif result.returncode == 1 and result.stderr:
+    print(result.stderr, end='')
+    sys.exit(1)
 
 output = re.sub(r'(?s)^.*?@@.*?\n', '', result.stdout)  # remove diff header
 
