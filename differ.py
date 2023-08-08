@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 from time import sleep
 import regex as re
 from pathlib import Path
@@ -14,9 +15,11 @@ from argparse import ArgumentParser
 # Arguments
 #################################################
 parser = ArgumentParser()
-parser.add_argument('file_old', help='The old file')
-parser.add_argument('file_new', help='The new file')
+parser.add_argument('file_old', nargs='?', help='The old file')
+parser.add_argument('file_new', nargs='?', help='The new file')
 parser.add_argument('-o', '--out', help='Save the diff to this file')
+parser.add_argument('-i', '--input', help='Manually input old and new text', action='store_true')
+parser.add_argument('-s', '--separator', help='The separator to use between diffs', default='\n---\n')
 parser.add_argument('--max', help='The max size of the diff in mb', type=int, default=5)
 args = parser.parse_args()
 
@@ -57,8 +60,26 @@ if not viewer.exists():
 #################################################
 # Main
 #################################################
-git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],<>:!.""‘’“”?‹›()^]+|[!.""‘’“”?‹›()^,<>:]']
+if args.input:
+    old_text, new_text = sys.stdin.read().split(args.separator)
+    file_old = NamedTemporaryFile(mode='w', delete=False)
+    file_new = NamedTemporaryFile(mode='w', delete=False)
+    file_old.write(old_text.strip())
+    file_new.write(new_text.strip())
+    file_old.close()
+    file_new.close()
+    args.file_old = file_old.name
+    args.file_new = file_new.name
+elif not args.file_old or not args.file_new:
+    print('Please provide both the old and new files')
+    sys.exit(1)
+
+git_cmd = ['git', 'diff', '--no-index', '--color-words', '--word-diff-regex=[^[:space:],<>:!.""‘’“”«»،؟?‹›()^]+|[!.""‘’“”«»،؟?‹›()^,<>:]']
 result = run(git_cmd + [args.file_old, args.file_new])
+
+if args.input:
+    os.unlink(file_old.name)
+    os.unlink(file_new.name)
 
 if result.returncode == 0:
     print('No changes')
