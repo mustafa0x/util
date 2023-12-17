@@ -18,6 +18,10 @@ PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep ren
 
 ### Helpers ###
 
+USER_HOME=/home/$CONFIG_USERNAME
+USER_LOCAL=$USER_HOME/.local
+USER_CONF=$USER_HOME/.config
+
 GREEN="\e[32m"
 NORMAL="\e[0m"
 
@@ -94,6 +98,8 @@ install_python() {
   apt-get install -y zlib1g zlib1g-dev libssl-dev libbz2-dev libsqlite3-dev libffi-dev liblzma-dev libncurses5-dev libreadline-dev
   rtx install python@latest
   rtx global python@latest
+  rtx plugin add poetry
+  rtx install poetry
   pip install ipython regex
 }
 
@@ -120,33 +126,6 @@ install_docker() {
   curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-armv7 -o $DOCKER_CONFIG/cli-plugins/docker-compose
   chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
   usermod -aG docker $CONFIG_USERNAME
-}
-
-install_direnv() {
-  USER_LOCAL=/home/$CONFIG_USERNAME/.local
-  curl -fsSL https://github.com/direnv/direnv/releases/latest/download/direnv.linux-arm64 > $USER_LOCAL/bin/direnv
-  chmod +x $USER_LOCAL/bin/direnv
-  echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
-  mkdir ~/.config/direnv
-
-  cat <<'EOF' > $USER_LOCAL/direnv/direnvrc
-  layout_poetry() {
-    if [[ ! -f pyproject.toml ]]; then
-      log_error 'No pyproject.toml found. Use `poetry new` or `poetry init` to create one first.'
-      exit 2
-    fi
-
-    local VENV=$(poetry env info --path)
-    if [[ -z $VENV || ! -d $VENV/bin ]]; then
-      log_error 'No poetry virtual environment found. Use `poetry install` to create one first.'
-      exit 2
-    fi
-
-    export VIRTUAL_ENV=$VENV
-    export POETRY_ACTIVE=1
-    PATH_add "$VENV/bin"
-  }
-EOF
 }
 
 #####################################################################
@@ -187,12 +166,12 @@ main() {
   chown -R $CONFIG_USERNAME:$CONFIG_USERNAME /srv
 
   sudo -i -u $CONFIG_USERNAME bash <<'EOF'
-    mkdir -p ~/.local/bin
-    mkdir /srv/{apps,conf}
+    mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
+
     echo -e "{email nuqayah@gmail.com}\nimport *.caddy" > /srv/conf/Caddyfile
-    # caddy fmt --overwrite
+    caddy fmt --overwrite /srv/conf/Caddyfile
     sudo update-alternatives --set editor /usr/bin/vim.basic
-    curl -sSL https://install.python-poetry.org | python3 -
+    curl -sSL https://github.com/moparisthebest/static-curl/releases/download/v8.5.0/curl-armv7 > ~/.local/bin/curl
     git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
     wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
 
