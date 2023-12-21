@@ -10,7 +10,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 readonly CONFIG_HOSTNAME=""
 readonly CONFIG_USERNAME="web"
-PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli"
+PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"
 
 #####################################################################
 ######################################################
@@ -78,6 +78,13 @@ install_caddy_server() {
   print_done
 }
 
+install_pandoc() {
+  VER=$(curl -s https://api.github.com/repos/jgm/pandoc/releases | jq -r '.[0].tag_name')
+  curl -SsL https://github.com/jgm/pandoc/releases/download/${VER}/pandoc-${VER}-1-arm64.deb -o pandoc.deb
+  sudo dpkg -i pandoc.deb
+  rm pandoc.deb
+}
+
 install_php() {
   echo -n "-> Installing PHP... "
   apt-get install -y php8.1-fpm php8.1-mbstring php8.1-sqlite3 php8.1-zip php8.1-curl # php8.1-gd php8.1-xml
@@ -91,6 +98,8 @@ install_rtx() {
     eval "$(rtx activate bash)"
     echo 'eval "$(rtx activate bash)"' >> ~/.bashrc
 EOF
+  echo -e '#!/bin/bash\nexec rtx x $1 -- "$@"' | cat - > /usr/local/bin/rtxx
+  chmod +x /usr/local/bin/rtxx
   print_done
 }
 
@@ -100,6 +109,7 @@ install_python() {
   rtx global python@latest
   rtx plugin add poetry
   rtx install poetry
+  rtx global poetry
   pip install ipython regex
 }
 
@@ -167,6 +177,11 @@ main() {
 
   sudo -i -u $CONFIG_USERNAME bash <<'EOF'
     mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
+
+    # make conf a git repo, useful to track changes
+    git config --global user.name web
+    git config --global user.email "web@web"
+    $(cd conf; git init && git add . && git commit -m init)
 
     echo -e "{email nuqayah@gmail.com}\nimport *.caddy" > /srv/conf/Caddyfile
     caddy fmt --overwrite /srv/conf/Caddyfile
