@@ -72,8 +72,8 @@ install_caddy_server() {
   apt-get update
   apt-get install -y caddy
   mv ./caddy.service /lib/systemd/system/caddy.service
-  sudo systemctl daemon-reload
-  sudo service caddy restart
+  systemctl daemon-reload
+  service caddy restart
 
   print_done
 }
@@ -81,7 +81,7 @@ install_caddy_server() {
 install_pandoc() {
   VER=$(curl -s https://api.github.com/repos/jgm/pandoc/releases | jq -r '.[0].tag_name')
   curl -SsL https://github.com/jgm/pandoc/releases/download/${VER}/pandoc-${VER}-1-arm64.deb -o pandoc.deb
-  sudo dpkg -i pandoc.deb
+  dpkg -i pandoc.deb
   rm pandoc.deb
 }
 
@@ -150,7 +150,7 @@ main() {
 
   hostnamectl set-hostname "$CONFIG_HOSTNAME"
   apt-get update
-  apt-get upgrade
+  apt-get -y upgrade
   apt-get install -y $PACKAGES
 
   add_user $CONFIG_USERNAME
@@ -191,8 +191,7 @@ main() {
     wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
 
     # .bashrc
-    echo "alias ls='nnn -de'" >> ~/.bashrc
-    echo "alias ipy=ipython3" >> ~/.bashrc
+    echo -e "alias ls='nnn -de'\nalias ipy=ipython3\nalias s='sudo systemctl'" >> ~/.bashrc
     echo 'export PATH="~/.local/bin:$PATH"' >> ~/.bashrc
     echo 'cd /srv' >> ~/.bashrc
     echo HISTSIZE=9999999 >> ~/.bashrc
