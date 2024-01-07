@@ -71,7 +71,18 @@ install_caddy_server() {
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
   apt-get update
   apt-get install -y caddy
-  mv ./caddy.service /lib/systemd/system/caddy.service
+  mkdir -p /etc/systemd/system/caddy.service.d/
+  cat <<EOF > /etc/systemd/system/caddy.service.d/override.conf
+[Service]
+ExecStart=
+ExecStart=/usr/bin/caddy run --environ --config /srv/conf/Caddyfile
+ExecReload=
+ExecReload=/usr/bin/caddy reload --config /srv/conf/Caddyfile --force
+LimitNOFILE=
+LimitNOFILE=1048576:1048576
+StandardOutput=append:/var/log/caddy/caddy.log
+StandardError=append:/var/log/caddy/caddy-error.log
+EOF
   systemctl daemon-reload
   service caddy restart
 
@@ -90,40 +101,40 @@ install_php() {
   apt-get install -y php8.1-fpm php8.1-mbstring php8.1-sqlite3 php8.1-zip php8.1-curl # php8.1-gd php8.1-xml
 }
 
-install_rtx() {
-  echo -n "-> Installing rtx..."
-  curl https://rtx.pub/rtx-latest-linux-arm64 > /usr/local/bin/rtx
-  chmod +x /usr/local/bin/rtx
+install_mise() {
+  echo -n "-> Installing mise..."
+  curl https://mise.pub/mise-latest-linux-arm64 > /usr/local/bin/mise
+  chmod +x /usr/local/bin/mise
   sudo -i -u $CONFIG_USERNAME bash <<'EOF'
-    eval "$(rtx activate bash)"
-    echo 'eval "$(rtx activate bash)"' >> ~/.bashrc
+    eval "$(mise activate bash)"
+    echo 'eval "$(mise activate bash)"' >> ~/.bashrc
 EOF
-  echo -e '#!/bin/bash\nexec rtx x $1 -- "$@"' | cat - > /usr/local/bin/rtxx
-  chmod +x /usr/local/bin/rtxx
+  echo -e '#!/bin/bash\nexec mise x $1 -- "$@"' > /usr/local/bin/misex
+  chmod +x /usr/local/bin/misex
   print_done
 }
 
 install_python() {
   apt-get install -y zlib1g zlib1g-dev libssl-dev libbz2-dev libsqlite3-dev libffi-dev liblzma-dev libncurses5-dev libreadline-dev
-  rtx install python@latest
-  rtx global python@latest
-  rtx plugin add poetry
-  rtx install poetry
-  rtx global poetry
-  pip install ipython regex
+  mise install python@latest
+  mise global python@latest # useless
+  mise plugin add poetry
+  mise install poetry
+  mise global poetry@latest # useless
+  misex pip install ipython regex
 }
 
 install_nodejs() {
   echo -n "-> Installing Node.js... "
 
   sudo -i -u $CONFIG_USERNAME bash <<'EOF'
-    rtx install nodejs@lts
-    rtx global nodejs@lts
-    npm install -g npm@latest
-    npm install -g pnpm
-    pnpm setup
-    source ~/.bashrc
-    pnpm install -g zx
+    eval "$(mise activate bash)"
+    mise install nodejs@lts
+    mise global nodejs@lts
+    misex npm install -g npm@latest
+    misex npm install -g pnpm
+    misex pnpm setup
+    misex pnpm install -g zx  # fails
 EOF
 
   print_done
@@ -143,12 +154,6 @@ install_docker() {
 #####################################################################
 
 main() {
-  if [[ ! -f caddy.service ]]; then
-     echo "caddy.service missing"
-     exit 1
-  fi
-
-  hostnamectl set-hostname "$CONFIG_HOSTNAME"
   apt-get update
   apt-get -y upgrade
   apt-get install -y $PACKAGES
@@ -164,7 +169,7 @@ main() {
   ##################
   # Install software
   ##################
-  install_rtx
+  install_mise
   install_python
   install_nodejs
   install_docker
@@ -193,7 +198,7 @@ main() {
     # .bashrc
     echo -e "alias ls='nnn -de'\nalias ipy=ipython3\nalias s='sudo systemctl'" >> ~/.bashrc
     echo 'export PATH="~/.local/bin:$PATH"' >> ~/.bashrc
-    echo 'cd /srv' >> ~/.bashrc
+    echo 'if [ "$PWD" == "$HOME" ]; then cd /srv; fi' >> ~/.bashrc
     echo HISTSIZE=9999999 >> ~/.bashrc
     echo HISTFILESIZE=9999999 >> ~/.bashrc
 
