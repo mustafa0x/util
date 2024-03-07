@@ -23,23 +23,30 @@ make_stmt = lambda d: (  # noqa: E731
     tuple(d["data"].values()),
 )
 
-db = sqlite3.connect(args.db)
 data_source = args.file.open() if args.file else sys.stdin
 data = None
-if args.lines:
-    data = (json.loads(line) for line in data_source)
-else:
-    data = json.load(data_source)
-    if isinstance(data, dict):
-        # The json file is an object, but data needs to be a list
-        data = [data]
+row_changed = 0
 
-for d in data:
-    # Always assume that we we need to update many rows for a single table
-    if isinstance(d['data'], dict):
-        d['data'] = [d['data']]
+try:
+    db = sqlite3.connect(args.db)
+    if args.lines:
+        data = (json.loads(line) for line in data_source)
+    else:
+        data = json.load(data_source)
+        if isinstance(data, dict):
+            # The json file is an object, but data needs to be a list
+            data = [data]
 
-    for p in d['data']:
-        db.execute(*make_stmt({'table': d['table'], 'data': p}))
+    for d in data:
+        # Always assume that we we need to update many rows for a single table
+        if isinstance(d['data'], dict):
+            d['data'] = [d['data']]
 
-db.commit()
+        for p in d['data']:
+            cur = db.execute(*make_stmt({'table': d['table'], 'data': p}))
+            row_changed += cur.rowcount
+
+    db.commit()
+    print(json.dumps({'rows_changed': row_changed}))
+except Exception as e:
+    print(json.dumps({'error': str(e)}))
