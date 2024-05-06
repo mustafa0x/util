@@ -1,5 +1,4 @@
-#!/bin/bash
-set -euxo pipefail
+#!/bin/bash -euxo pipefail
 
 [ "$EUID" -ne 0 ] && echo "Please run as root" && exit 1
 export DEBIAN_FRONTEND=noninteractive
@@ -54,7 +53,7 @@ ssh_prep() {
   echo -n "-> SSH"
 
   # Copy authorized_keys from root, then change owner
-  cp -R /root/.ssh /home/${username}/
+  mv /root/.ssh /home/${username}/
   chown -R $username:$username "/home/${username}/.ssh"
   sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config
   sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
@@ -109,8 +108,6 @@ install_mise() {
     eval "$(mise activate bash)"
     echo 'eval "$(mise activate bash)"' >> ~/.bashrc
 EOF
-  echo -e '#!/bin/bash\nexec mise x $1 -- "$@"' > /usr/local/bin/misex
-  chmod +x /usr/local/bin/misex
   print_done
 }
 
@@ -121,7 +118,7 @@ install_python() {
   mise plugin add poetry
   mise install poetry
   mise global poetry@latest # useless
-  misex pip install ipython regex
+  mise x -- pip install ipython regex
 }
 
 install_nodejs() {
@@ -131,10 +128,10 @@ install_nodejs() {
     eval "$(mise activate bash)"
     mise install nodejs@lts
     mise global nodejs@lts
-    misex npm install -g npm@latest
-    misex npm install -g pnpm
-    misex pnpm setup
-    misex pnpm install -g zx  # fails
+    mise x -- npm install -g npm@latest
+    mise x -- npm install -g pnpm
+    mise x -- pnpm setup
+    mise x -- pnpm install -g zx  # fails
 EOF
 
   print_done
@@ -163,7 +160,7 @@ main() {
 
   ufw allow OpenSSH && ufw allow http && ufw allow https && ufw --force enable
 
-  # Create a 2gb empty file on the server to be able to immediately space if there isn't any
+  # Create a 2gb empty file on the server to be able to immediately free space if there isn't any
   fallocate -l 2G /var/tmp/EMERGENCY_RESERVE
 
   ##################
@@ -196,7 +193,7 @@ main() {
     wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
 
     # .bashrc
-    echo -e "alias ls='nnn -de'\nalias ipy=ipython3\nalias s='sudo systemctl'" >> ~/.bashrc
+    echo -e "alias dc='docker compose'\nalias ls='nnn -de'\nalias ipy=ipython3\nalias s='sudo systemctl'\nalias r='mise run --'" >> ~/.bashrc
     echo 'export PATH="~/.local/bin:$PATH"' >> ~/.bashrc
     echo 'if [ "$PWD" == "$HOME" ]; then cd /srv; fi' >> ~/.bashrc
     echo HISTSIZE=9999999 >> ~/.bashrc
