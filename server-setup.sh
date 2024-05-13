@@ -1,7 +1,12 @@
-#!/bin/bash -euxo pipefail
+#!/bin/bash
+
+set -euxo pipefail
 
 [ "$EUID" -ne 0 ] && echo "Please run as root" && exit 1
 export DEBIAN_FRONTEND=noninteractive
+
+ARCH_RAW=$(uname -m)
+ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarch64" ]] && echo "arm64" || (echo "Unsupported architecture: $ARCH_RAW" >&2 && return 1)))
 
 #####################################################################
 ####################### CONFIG #######################
@@ -90,59 +95,29 @@ EOF
 
 install_pandoc() {
   VER=$(curl -s https://api.github.com/repos/jgm/pandoc/releases | jq -r '.[0].tag_name')
-  curl -SsL https://github.com/jgm/pandoc/releases/download/${VER}/pandoc-${VER}-1-arm64.deb -o pandoc.deb
+  curl -SsL https://github.com/jgm/pandoc/releases/download/${VER}/pandoc-${VER}-1-${ARCH}.deb -o pandoc.deb
   dpkg -i pandoc.deb
   rm pandoc.deb
 }
 
 install_php() {
   echo -n "-> Installing PHP... "
-  apt-get install -y php8.1-fpm php8.1-mbstring php8.1-sqlite3 php8.1-zip php8.1-curl # php8.1-gd php8.1-xml
+  apt-get install -y php8.3-fpm php8.3-mbstring php8.3-sqlite3 php8.3-zip php8.3-curl # php8.3-gd php8.3-xml
 }
 
 install_mise() {
   echo -n "-> Installing mise..."
-  curl https://mise.pub/mise-latest-linux-arm64 > /usr/local/bin/mise
+  curl https://mise.jdx.dev/mise-latest-linux-${ARCH} > /usr/local/bin/mise
   chmod +x /usr/local/bin/mise
-  sudo -i -u $CONFIG_USERNAME bash <<'EOF'
-    eval "$(mise activate bash)"
-    echo 'eval "$(mise activate bash)"' >> ~/.bashrc
-EOF
-  print_done
-}
-
-install_python() {
-  apt-get install -y zlib1g zlib1g-dev libssl-dev libbz2-dev libsqlite3-dev libffi-dev liblzma-dev libncurses5-dev libreadline-dev
-  mise install python@latest
-  mise global python@latest # useless
-  mise plugin add poetry
-  mise install poetry
-  mise global poetry@latest # useless
-  mise x -- pip install ipython regex
-}
-
-install_nodejs() {
-  echo -n "-> Installing Node.js... "
-
-  sudo -i -u $CONFIG_USERNAME bash <<'EOF'
-    eval "$(mise activate bash)"
-    mise install nodejs@lts
-    mise global nodejs@lts
-    mise x -- npm install -g npm@latest
-    mise x -- npm install -g pnpm
-    mise x -- pnpm setup
-    mise x -- pnpm install -g zx  # fails
-EOF
-
   print_done
 }
 
 install_docker() {
   curl -fsSL https://get.docker.com -o get-docker.sh && sh ./get-docker.sh
-  DOCKER_CONFIG=/usr/libexec/docker
-  mkdir -p $DOCKER_CONFIG/cli-plugins
-  curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-armv7 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-  chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+  DOCKER_PLUGINS=/usr/libexec/docker/cli-plugins
+  mkdir -p $DOCKER_PLUGINS
+  curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH_RAW} -o $DOCKER_PLUGINS/docker-compose
+  chmod +x $DOCKER_PLUGINS/docker-compose
   usermod -aG docker $CONFIG_USERNAME
 }
 
@@ -166,44 +141,71 @@ main() {
   ##################
   # Install software
   ##################
-  install_mise
-  install_python
-  install_nodejs
-  install_docker
   install_caddy_server
+  install_docker
+  install_mise
+  install_php
+
+  apt-get autoremove -y
 
   ##################
   # Config
   ##################
   chown -R $CONFIG_USERNAME:$CONFIG_USERNAME /srv
+}
 
-  sudo -i -u $CONFIG_USERNAME bash <<'EOF'
-    mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
+user_script() {
+  eval "$(mise activate bash)"
+  echo 'eval "$(mise activate bash)"' >> ~/.bashrc
 
-    # make conf a git repo, useful to track changes
-    git config --global user.name web
-    git config --global user.email "web@web"
-    $(cd conf; git init && git add . && git commit -m init)
+  mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
-    echo -e "{email nuqayah@gmail.com}\nimport *.caddy" > /srv/conf/Caddyfile
-    caddy fmt --overwrite /srv/conf/Caddyfile
-    sudo update-alternatives --set editor /usr/bin/vim.basic
-    curl -sSL https://github.com/moparisthebest/static-curl/releases/download/v8.5.0/curl-armv7 > ~/.local/bin/curl
-    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
-    wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
+  # make conf a git repo, useful to track changes
+  # TODO: auto commit + auto write commit message
+  git config --global user.name web
+  git config --global user.email "web@web"
+  git config --global init.defaultBranch master
+  $(cd conf; git init && git add . && git commit -m init)
 
-    # .bashrc
-    echo -e "alias dc='docker compose'\nalias ls='nnn -de'\nalias ipy=ipython3\nalias s='sudo systemctl'\nalias r='mise run --'" >> ~/.bashrc
-    echo 'export PATH="~/.local/bin:$PATH"' >> ~/.bashrc
-    echo 'if [ "$PWD" == "$HOME" ]; then cd /srv; fi' >> ~/.bashrc
-    echo HISTSIZE=9999999 >> ~/.bashrc
-    echo HISTFILESIZE=9999999 >> ~/.bashrc
+  echo -e "{email nuqayah@gmail.com}\nimport *.caddy" > /srv/conf/Caddyfile
+  caddy fmt --overwrite /srv/conf/Caddyfile
+  sudo update-alternatives --set editor /usr/bin/vim.basic
+  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
+  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
+  ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
-    ln -s $(which fdfind) ~/.local/bin/fd
+  cat <<EOF >> ~/.bashrc
+alias dc='docker compose'
+alias ls='nnn -de'
+alias ipy=ipython3
+alias s='sudo systemctl'
+alias r='mise run --'
+if [ "\$PWD" == "\$HOME" ]; then cd /srv; fi
+HISTSIZE=9999999
+HISTFILESIZE=9999999
 EOF
 
-  # Cleanup
-  apt-get autoremove
+  ln -s $(which fdfind) ~/.local/bin/fd
+
+  install_python() {
+    mise install python@latest
+    mise global python@latest
+    mise install poetry
+    mise global poetry@latest
+    pip install ipython regex
+  }
+
+  install_nodejs() {
+    mise install nodejs@lts
+    mise global nodejs@lts
+    npm install -g npm@latest
+    npm install -g pnpm
+    pnpm setup
+    pnpm install -g zx@7.2.3
+  }
+
+  install_python
+  install_nodejs
 }
 
 main
