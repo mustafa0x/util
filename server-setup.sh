@@ -14,7 +14,7 @@ ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarc
 
 readonly CONFIG_HOSTNAME=""
 readonly CONFIG_USERNAME="web"
-PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"
+PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq ffmpeg"
 
 #####################################################################
 ######################################################
@@ -82,7 +82,6 @@ ExecStart=
 ExecStart=/usr/bin/caddy run --environ --config /srv/conf/Caddyfile
 ExecReload=
 ExecReload=/usr/bin/caddy reload --config /srv/conf/Caddyfile --force
-LimitNOFILE=
 LimitNOFILE=1048576:1048576
 StandardOutput=append:/var/log/caddy/caddy.log
 StandardError=append:/var/log/caddy/caddy-error.log
@@ -155,8 +154,8 @@ main() {
 }
 
 user_script() {
-  eval "$(mise activate bash)"
-  echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+  eval "$(mise activate --status bash)"
+  echo 'eval "$(mise activate --status bash)"' >> ~/.bashrc
 
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
