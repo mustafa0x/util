@@ -125,6 +125,7 @@ install_docker() {
 #####################################################################
 
 main() {
+  timedatectl set-timezone UTC
   apt-get update
   apt-get -y upgrade
   apt-get install -y $PACKAGES
@@ -160,7 +161,6 @@ user_script() {
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
   # make conf a git repo, useful to track changes
-  # TODO: auto commit + auto write commit message
   git config --global user.name web
   git config --global user.email "web@web"
   git config --global init.defaultBranch master
@@ -182,6 +182,13 @@ alias r='mise run --'
 if [ "\$PWD" == "\$HOME" ]; then cd /srv; fi
 HISTSIZE=9999999
 HISTFILESIZE=9999999
+export RIPGREP_CONFIG_PATH=~/.config/.ripgreprc
+EOF
+
+  cat <<EOF >> ~/.config/.ripgreprc
+--max-columns=150
+--max-columns-preview
+--smart-case
 EOF
 
   ln -s $(which fdfind) ~/.local/bin/fd
