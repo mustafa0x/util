@@ -17,11 +17,13 @@ set -euxo pipefail
 # - curl -v https://app-site-association.cdn-apple.com/a/v1/read.tafsir.one
 # - https://branch.io/resources/aasa-validator/
 
-FINGERPRINT=$(keytool -list -v -keystore android/$KEY_STORE_PATH | grep SHA256: | awk '{print $2}')
+APP_ID=$(jq -r .config.app_id package.json)
 
+#################################################
+# IOS
+#################################################
 DOMAIN=$(jq -r .config.domain package.json)
 TEAM_ID=$(jq -r .config.team_id package.json)
-APP_ID=$(jq -r .config.app_id package.json)
 
 cat <<EOF >> android/app/src/main/AndroidManifest.xml
 <intent-filter android:autoVerify="true">
@@ -37,14 +39,18 @@ cat <<EOF > apple-app-site-association
 {"applinks": {"apps": [],"details": [{"appID": "$TEAM_ID.$APP_ID","paths": ["*"]}]}}
 EOF
 
-cat <<EOF > assetlinks.json
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target" : { "namespace": "android_app", "package_name": "$APP_ID",
-               "sha256_cert_fingerprints": ["$FINGERPRINT"] }
-}]
-EOF
+#################################################
+# Android
+#################################################
+if ! [ -f assetlinks.json ]; then
+    echo "Create assetlinks.json and run the script again"
+    open https://play.google.com/console/u/0/developers/$PLAY_CONSOLE_DEV_ID/app/$PLAY_CONSOLE_APP_ID/keymanagement
+    exit 1
+fi
 
+#################################################
+# Upload
+#################################################
 tar -cf - apple-app-site-association assetlinks.json | ssh $DEPLOY_HOST "
     mkdir -p /srv/apps/$APP_NAME/.well-known
     cd /srv/apps/$APP_NAME/.well-known
