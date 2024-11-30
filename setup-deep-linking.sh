@@ -17,13 +17,21 @@ set -euxo pipefail
 # - curl -v https://app-site-association.cdn-apple.com/a/v1/read.tafsir.one
 # - https://branch.io/resources/aasa-validator/
 
-APP_ID=$(jq -r .config.app_id package.json)
+#################################################
+# Android
+#################################################
+if ! [ -f assetlinks.json ]; then
+    echo "Create assetlinks.json and run the script again"
+    open https://play.google.com/console/u/0/developers/$PLAY_CONSOLE_DEV_ID/app/$PLAY_CONSOLE_APP_ID/keymanagement
+    exit 1
+fi
 
 #################################################
 # IOS
 #################################################
 DOMAIN=$(jq -r .config.domain package.json)
 TEAM_ID=$(jq -r .config.team_id package.json)
+APP_ID=$(jq -r .config.app_id package.json)
 
 cat <<EOF >> android/app/src/main/AndroidManifest.xml
 <intent-filter android:autoVerify="true">
@@ -40,15 +48,6 @@ cat <<EOF > apple-app-site-association
 EOF
 
 #################################################
-# Android
-#################################################
-if ! [ -f assetlinks.json ]; then
-    echo "Create assetlinks.json and run the script again"
-    open https://play.google.com/console/u/0/developers/$PLAY_CONSOLE_DEV_ID/app/$PLAY_CONSOLE_APP_ID/keymanagement
-    exit 1
-fi
-
-#################################################
 # Upload
 #################################################
 tar -cf - apple-app-site-association assetlinks.json | ssh $DEPLOY_HOST "
@@ -56,3 +55,5 @@ tar -cf - apple-app-site-association assetlinks.json | ssh $DEPLOY_HOST "
     cd /srv/apps/$APP_NAME/.well-known
     tar -xf -
 "
+
+echo 'Caddy: add `header /.well-known/apple-app-site-association Content-type application/json``'
