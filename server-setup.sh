@@ -173,6 +173,9 @@ user_script() {
   wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
+  curl https://hishtory.dev/install.py | python -
+  ~/.hishtory/hishtory config-set enable-control-r false
+
   cat <<'EOF' >> ~/.bashrc
 eval "$(mise activate --status bash)"
 alias dc='docker compose'
