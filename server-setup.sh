@@ -14,7 +14,7 @@ ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarc
 
 readonly CONFIG_HOSTNAME=""
 readonly CONFIG_USERNAME="web"
-PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq ffmpeg"
+PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"  #ffmpeg
 
 #####################################################################
 ######################################################
@@ -87,7 +87,6 @@ StandardOutput=append:/var/log/caddy/caddy.log
 StandardError=append:/var/log/caddy/caddy-error.log
 EOF
   systemctl daemon-reload
-  service caddy restart
 
   print_done
 }
@@ -168,21 +167,43 @@ user_script() {
 
   echo -e "{email nuqayah@gmail.com}\nimport *.caddy" > /srv/conf/Caddyfile
   caddy fmt --overwrite /srv/conf/Caddyfile
+  sudo service caddy restart
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
-  cat <<EOF >> ~/.bashrc
+  cat <<'EOF' >> ~/.bashrc
+eval "$(mise activate --status bash)"
 alias dc='docker compose'
 alias ls='nnn -de'
 alias ipy=ipython3
 alias s='sudo systemctl'
 alias r='mise run --'
-if [ "\$PWD" == "\$HOME" ]; then cd /srv; fi
+if [ "$PWD" == "$HOME" ]; then cd /srv; fi
 HISTSIZE=9999999
 HISTFILESIZE=9999999
 export RIPGREP_CONFIG_PATH=~/.config/.ripgreprc
+
+function sv_status() {
+    GREEN='\033[0;32m'
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+    echo -e '\033[1mServices'$NC
+
+    for symlink in /etc/systemd/system/multi-user.target.wants/*.service; do
+        target=$(readlink -f "$symlink")
+
+        if [[ $target == /srv/* ]]; then
+            service_name=$(basename "$symlink")
+            status=$(systemctl is-active "$service_name")
+            COLOR=$([[ $status == "active" ]] && echo $GREEN || echo $RED)
+            echo -e " → ${service_name%.service} - ${COLOR}$status${NC}"
+        fi
+    done
+}
+
+sv_status
 EOF
 
   cat <<EOF >> ~/.config/.ripgreprc
@@ -194,20 +215,20 @@ EOF
   ln -s $(which fdfind) ~/.local/bin/fd
 
   install_python() {
-    mise install python@latest
+    mise use python@latest
     mise global python@latest
-    mise install poetry
+    mise use poetry
     mise global poetry@latest
-    pip install ipython regex
+    pip use ipython regex
   }
 
   install_nodejs() {
-    mise install nodejs@lts
+    mise use nodejs@lts
     mise global nodejs@lts
-    npm install -g npm@latest
-    npm install -g pnpm
+    npm use -g npm@latest
+    npm use -g pnpm
     pnpm setup
-    pnpm install -g zx@7.2.3
+    pnpm use -g zx@7.2.3
   }
 
   install_python
