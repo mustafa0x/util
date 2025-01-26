@@ -21,7 +21,7 @@ set -euxo pipefail
 # Android
 #################################################
 if ! [ -f assetlinks.json ]; then
-    echo "Create assetlinks.json and run the script again"
+    echo 'Create assetlinks.json (copy from play console) then run the script again'
     open https://play.google.com/console/u/0/developers/$PLAY_CONSOLE_DEV_ID/app/$PLAY_CONSOLE_APP_ID/keymanagement
     exit 1
 fi
