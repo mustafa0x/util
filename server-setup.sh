@@ -127,7 +127,7 @@ main() {
   timedatectl set-timezone UTC
   apt-get update
   apt-get -y upgrade
-  apt-get install -y $PACKAGES
+  apt-get install -y --no-install-recommends $PACKAGES
 
   add_user $CONFIG_USERNAME
   ssh_prep
@@ -143,7 +143,7 @@ main() {
   install_caddy_server
   install_docker
   install_mise
-  install_php
+  # install_php
 
   apt-get autoremove -y
 
@@ -160,18 +160,19 @@ user_script() {
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
   # make conf a git repo, useful to track changes
+  cd /srv
   git config --global user.name web
   git config --global user.email "web@web"
   git config --global init.defaultBranch master
-  $(cd conf; git init && git add . && git commit -m init)
+  (cd conf; git init && git add . && git commit -m init)
 
-  echo -e "{email nuqayah@gmail.com}\nimport *.caddy" > /srv/conf/Caddyfile
+  echo -e "{ email nuqayah@gmail.com }\nimport *.caddy" > /srv/conf/Caddyfile
   caddy fmt --overwrite /srv/conf/Caddyfile
   sudo service caddy restart
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
-  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
-  ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+  # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
+  # ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
   curl https://hishtory.dev/install.py | python -
   ~/.hishtory/hishtory config-set enable-control-r false
