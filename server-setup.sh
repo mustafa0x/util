@@ -166,8 +166,8 @@ user_script() {
 
   # make conf a git repo, useful to track changes
   cd /srv
-  git config --global user.name web
-  git config --global user.email "web@web"
+  git config --global user.name $USER
+  git config --global user.email "$USER@$USER"
   git config --global init.defaultBranch master
   (cd conf; git init && git add . && git commit -m init)
 
