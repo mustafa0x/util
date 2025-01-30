@@ -153,6 +153,11 @@ main() {
   chown -R $CONFIG_USERNAME:$CONFIG_USERNAME /srv
 }
 
+main
+
+##################
+# User script
+##################
 user_script() {
   eval "$(mise activate --status bash)"
   echo 'eval "$(mise activate --status bash)"' >> ~/.bashrc
@@ -238,5 +243,3 @@ EOF
   install_python
   install_nodejs
 }
-
-main
