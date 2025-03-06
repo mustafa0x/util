@@ -12,9 +12,9 @@ ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarc
 ####################### CONFIG #######################
 #####################################################################
 
-readonly CONFIG_HOSTNAME=""
+readonly CONFIG_HOSTNAME="remotion"
 readonly CONFIG_USERNAME="web"
-PACKAGES="htop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"  #ffmpeg
+PACKAGES="htop btop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"  #ffmpeg
 
 #####################################################################
 ######################################################
@@ -114,7 +114,7 @@ install_docker() {
   curl -fsSL https://get.docker.com -o get-docker.sh && sh ./get-docker.sh
   DOCKER_PLUGINS=/usr/libexec/docker/cli-plugins
   mkdir -p $DOCKER_PLUGINS
-  curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH_RAW} -o $DOCKER_PLUGINS/docker-compose
+  curl -sSL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH_RAW} -o $DOCKER_PLUGINS/docker-compose
   chmod +x $DOCKER_PLUGINS/docker-compose
   usermod -aG docker $CONFIG_USERNAME
 }
@@ -131,6 +131,10 @@ main() {
 
   add_user $CONFIG_USERNAME
   ssh_prep
+
+  if [ -n "$CONFIG_HOSTNAME" ]; then
+    hostnamectl set-hostname "$CONFIG_HOSTNAME"
+  fi
 
   ufw allow OpenSSH && ufw allow http && ufw allow https && ufw --force enable
 
@@ -160,7 +164,6 @@ main
 ##################
 user_script() {
   eval "$(mise activate --status bash)"
-  echo 'eval "$(mise activate --status bash)"' >> ~/.bashrc
 
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
@@ -178,9 +181,7 @@ user_script() {
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
   # ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-
-  curl https://hishtory.dev/install.py | python -
-  ~/.hishtory/hishtory config-set enable-control-r false
+  ln -s $(which fdfind) ~/.local/bin/fd
 
   cat <<'EOF' >> ~/.bashrc
 eval "$(mise activate --status bash)"
@@ -221,25 +222,14 @@ EOF
 --smart-case
 EOF
 
-  ln -s $(which fdfind) ~/.local/bin/fd
+  mise use -g python@latest uv nodejs@lts
+  pip install ipython regex
 
-  install_python() {
-    mise use python@latest
-    mise global python@latest
-    mise use poetry
-    mise global poetry@latest
-    pip use ipython regex
-  }
+  npm install -g npm@latest
+  npm install -g pnpm
+  pnpm setup
+  pnpm install -g zx@7
 
-  install_nodejs() {
-    mise use nodejs@lts
-    mise global nodejs@lts
-    npm use -g npm@latest
-    npm use -g pnpm
-    pnpm setup
-    pnpm use -g zx@7.2.3
-  }
-
-  install_python
-  install_nodejs
+  curl https://hishtory.dev/install.py | python -
+  ~/.hishtory/hishtory config-set enable-control-r false
 }
