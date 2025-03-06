@@ -164,6 +164,7 @@ main
 ##################
 user_script() {
   eval "$(mise activate --status bash)"
+  mise settings experimental=true
 
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
