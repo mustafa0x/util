@@ -190,7 +190,7 @@ alias dc='docker compose'
 alias ls='nnn -de'
 alias ipy=ipython3
 alias s='sudo systemctl'
-alias r='mise run --'
+alias r='mise run'
 if [ "$PWD" == "$HOME" ]; then cd /srv; fi
 HISTSIZE=9999999
 HISTFILESIZE=9999999
