@@ -172,7 +172,7 @@ user_script() {
   cd /srv
   git config --global user.name $USER
   git config --global user.email "$USER@$USER"
-  git config --global init.defaultBranch master
+  git config --global init.defaultBranch main
   (cd conf; git init && git add . && git commit -m init)
 
   echo -e "{ email nuqayah@gmail.com }\nimport *.caddy" > /srv/conf/Caddyfile
