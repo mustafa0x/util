@@ -12,7 +12,7 @@ ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarc
 ####################### CONFIG #######################
 #####################################################################
 
-readonly CONFIG_HOSTNAME="remotion"
+readonly CONFIG_HOSTNAME=""
 readonly CONFIG_USERNAME="web"
 PACKAGES="htop btop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"  #ffmpeg
 
@@ -187,7 +187,7 @@ user_script() {
   cat <<'EOF' >> ~/.bashrc
 eval "$(mise activate --status bash)"
 alias dc='docker compose'
-alias ls='nnn -de'
+alias n='nnn -de'
 alias ipy=ipython3
 alias s='sudo systemctl'
 alias r='mise run'
