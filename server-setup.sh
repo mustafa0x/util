@@ -105,7 +105,7 @@ install_php() {
 
 install_mise() {
   echo -n "-> Installing mise..."
-  curl https://mise.jdx.dev/mise-latest-linux-${ARCH} > /usr/local/bin/mise
+  curl -SsL https://mise.jdx.dev/mise-latest-linux-${ARCH} > /usr/local/bin/mise
   chmod +x /usr/local/bin/mise
   print_done
 }
@@ -170,6 +170,7 @@ user_script() {
 
   # make conf a git repo, useful to track changes
   cd /srv
+  USER=web
   git config --global user.name $USER
   git config --global user.email "$USER@$USER"
   git config --global init.defaultBranch main
@@ -181,7 +182,7 @@ user_script() {
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
-  # ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+  ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
   ln -s $(which fdfind) ~/.local/bin/fd
 
   cat <<'EOF' >> ~/.bashrc
@@ -231,6 +232,6 @@ EOF
   pnpm setup
   pnpm install -g zx@7
 
-  curl https://hishtory.dev/install.py | python -
+  curl -SsL https://hishtory.dev/install.py | python -
   ~/.hishtory/hishtory config-set enable-control-r false
 }
