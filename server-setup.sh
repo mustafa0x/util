@@ -14,7 +14,7 @@ ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarc
 
 readonly CONFIG_HOSTNAME=""
 readonly CONFIG_USERNAME="web"
-PACKAGES="htop btop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq"  #ffmpeg
+PACKAGES="htop btop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq tig"  #ffmpeg
 
 #####################################################################
 ######################################################
@@ -87,6 +87,7 @@ StandardOutput=append:/var/log/caddy/caddy.log
 StandardError=append:/var/log/caddy/caddy-error.log
 EOF
   systemctl daemon-reload
+  caddy trust  # to install root store
 
   print_done
 }
@@ -236,4 +237,5 @@ EOF
 
   curl -Ss https://starship.rs/install.sh | sh
   echo 'eval "$(starship init bash)"' >> ~/.bashrc
+  echo -e '[directory]\ntruncation_length = 0\ntruncation_symbol = ""\ntruncate_to_repo=false' >> ~/.config/starship.toml
 }
