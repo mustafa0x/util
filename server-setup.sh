@@ -170,7 +170,6 @@ user_script() {
 
   # make conf a git repo, useful to track changes
   cd /srv
-  USER=web
   git config --global user.name $USER
   git config --global user.email "$USER@$USER"
   git config --global init.defaultBranch main
@@ -224,13 +223,13 @@ EOF
 --smart-case
 EOF
 
-  mise use -g python@latest uv nodejs@lts
-  pip install ipython regex
+  mise use -g python@latest uv@latest nodejs@lts
+  pip install ipython regex requests
 
   npm install -g npm@latest
   npm install -g pnpm
   pnpm setup
-  pnpm install -g zx@7
+  pnpm install -g zx
 
   curl -SsL https://hishtory.dev/install.py | python -
   ~/.hishtory/hishtory config-set enable-control-r false
