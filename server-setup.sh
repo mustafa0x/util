@@ -233,4 +233,7 @@ EOF
 
   curl -SsL https://hishtory.dev/install.py | python -
   ~/.hishtory/hishtory config-set enable-control-r false
+
+  curl -Ss https://starship.rs/install.sh | sh
+  echo 'eval "$(starship init bash)"' >> ~/.bashrc
 }
