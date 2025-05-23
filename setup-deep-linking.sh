@@ -21,6 +21,8 @@ set -euxo pipefail
 # Android
 #################################################
 if ! [ -f assetlinks.json ]; then
+    PLAY_CONSOLE_DEV_ID=$(jq -r ._config.play_console_dev_id package.json)
+    PLAY_CONSOLE_APP_ID=$(jq -r ._config.play_console_app_id package.json)
     echo 'Create assetlinks.json (copy from play console) then run the script again'
     open https://play.google.com/console/u/0/developers/$PLAY_CONSOLE_DEV_ID/app/$PLAY_CONSOLE_APP_ID/keymanagement
     exit 1
@@ -30,7 +32,7 @@ fi
 # IOS
 #################################################
 DOMAIN=$(jq -r .config.domain package.json)
-TEAM_ID=$(jq -r .config.team_id package.json)
+TEAM_ID=$(rg --no-line-number --max-count 1 'DEVELOPMENT_TEAM = (.*?);' -or '$1' ios/App/App.xcodeproj/project.pbxproj)
 APP_ID=$(jq -r .config.app_id package.json)
 
 cat <<EOF >> android/app/src/main/AndroidManifest.xml
@@ -56,4 +58,4 @@ tar -cf - apple-app-site-association assetlinks.json | ssh $DEPLOY_HOST "
     tar -xf -
 "
 
-echo 'Caddy: add `header /.well-known/apple-app-site-association Content-type application/json``'
+echo 'Caddy: add `header /.well-known/apple-app-site-association Content-type application/json`'
