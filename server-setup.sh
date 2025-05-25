@@ -115,8 +115,14 @@ install_docker() {
   curl -fsSL https://get.docker.com -o get-docker.sh && sh ./get-docker.sh
   DOCKER_PLUGINS=/usr/libexec/docker/cli-plugins
   mkdir -p $DOCKER_PLUGINS
+
   curl -sSL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH_RAW} -o $DOCKER_PLUGINS/docker-compose
   chmod +x $DOCKER_PLUGINS/docker-compose
+
+  LATEST=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | jq -r .tag_name)
+  curl -sSL https://github.com/docker/buildx/releases/download/${LATEST}/buildx-${LATEST}.linux-${ARCH} -o $DOCKER_PLUGINS/docker-buildx
+  chmod +x $DOCKER_PLUGINS/docker-buildx
+
   usermod -aG docker $CONFIG_USERNAME
 }
 
