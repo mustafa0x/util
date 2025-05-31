@@ -188,6 +188,7 @@ user_script() {
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
+  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/print_caddy_hosts.py
   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
   ln -s $(which fdfind) ~/.local/bin/fd
 
@@ -222,6 +223,8 @@ function sv_status() {
 }
 
 sv_status
+
+python ~/.local/print_caddy_hosts.py
 EOF
 
   cat <<EOF >> ~/.config/.ripgreprc
