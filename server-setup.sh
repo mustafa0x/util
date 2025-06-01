@@ -187,8 +187,8 @@ user_script() {
   sudo service caddy restart
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
-  # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/sqlite_upsert.py
-  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/master/print_caddy_hosts.py
+  # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/sqlite_upsert.py
+  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/print_caddy_hosts.py
   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
   ln -s $(which fdfind) ~/.local/bin/fd
 
