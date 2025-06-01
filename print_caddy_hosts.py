@@ -91,18 +91,7 @@ if not grouped:
 for domain in sorted(grouped):
     entries = grouped[domain]
 
-    # Is there a bare-domain (“@”) entry?
-    bare = next((e for e in entries if e[0] == '@'), None)
+    print(BOLD.format(domain))
 
-    # Header line: always printed, always bold
-    if bare:
-        lock, port = bare[1], bare[2]
-        print(f'{BOLD.format(domain)} {lock}{port}')
-    else:
-        print(BOLD.format(domain))
-
-    # Sub-domains: print only if at least one real sub exists
-    subs = [e for e in entries if e[0] != '@']
-    if subs:
-        for label, lock, port in sorted(subs, key=lambda x: x[0]):
-            print(f'  {lock} {label}{port}')
+    for label, lock, port in sorted(entries, key=lambda x: (x[0] != '@', x[0])):
+        print(f'  {lock} {label}{port}')
