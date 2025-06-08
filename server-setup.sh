@@ -199,7 +199,7 @@ alias n='nnn -de'
 alias ipy=ipython3
 alias s='sudo systemctl'
 alias r='mise run'
-if [ "$PWD" == "$HOME" ]; then cd /srv; fi
+if [ "$PWD" == "$HOME" ]; then cd /srv/apps; fi
 HISTSIZE=9999999
 HISTFILESIZE=9999999
 export RIPGREP_CONFIG_PATH=~/.config/.ripgreprc
