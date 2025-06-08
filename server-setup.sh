@@ -175,6 +175,9 @@ user_script() {
 
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
+  echo -e "{ email nuqayah@gmail.com }\nimport *.caddy" > /srv/conf/Caddyfile
+  caddy fmt --overwrite /srv/conf/Caddyfile
+
   # make conf a git repo, useful to track changes
   cd /srv
   git config --global user.name $USER
@@ -182,8 +185,6 @@ user_script() {
   git config --global init.defaultBranch main
   (cd conf; git init && git add . && git commit -m init)
 
-  echo -e "{ email nuqayah@gmail.com }\nimport *.caddy" > /srv/conf/Caddyfile
-  caddy fmt --overwrite /srv/conf/Caddyfile
   sudo service caddy restart
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
@@ -241,7 +242,7 @@ EOF
   pnpm setup
   pnpm install -g zx
 
-  curl -SsL https://hishtory.dev/install.py | python -
+  curl -SsL https://hishtory.dev/install.py | python - --offline
   ~/.hishtory/hishtory config-set enable-control-r false
 
   curl -Ss https://starship.rs/install.sh | sh
