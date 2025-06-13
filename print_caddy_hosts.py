@@ -76,7 +76,7 @@ grouped: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
 
 for srv in servers(cfg).values():
     has_tls = any(':443' in l or l.endswith('443') for l in srv.get('listen', []))
-    lock = LOCK if has_tls else '  '
+    lock = '  ' if has_tls else UNLOCK
 
     for route in srv.get('routes', []):
         ports = sorted(rp_ports(route))
