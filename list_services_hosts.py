@@ -1,20 +1,38 @@
-"""
-List every host served by Caddy, grouped by domain.
-
-• Main domain printed in bold.  If there are no sub-domains, that single line is all you see.
-• 🔒 when the server listens on :443
-• ➡️ plus port list whenever the route contains reverse-proxy upstreams.
-• Works with either Caddy JSON layout (`servers` at top level or under apps→http).
-"""
-
-from __future__ import annotations
-import argparse, json, sys
+import argparse, json, sys, re, subprocess
 from collections import defaultdict
 from urllib.error import URLError
 from urllib.request import urlopen
+from pathlib import Path
 
 LOCK, UNLOCK, ARROW = '🔒', '🔓', '➡️'
 BOLD = '\033[1m{}\033[0m'  # ANSI bold wrapper
+GREEN, RED, NC = '\033[0;32m', '\033[0;31m', '\033[0m'
+run = lambda cmd: subprocess.run(cmd, text=True, capture_output=True).stdout.strip()
+
+
+# ############################################################
+# ####################### Services ###########################
+# ############################################################
+print(BOLD.format('Services'))
+
+def pids(unit: str) -> list[str]:
+    f = Path('/sys/fs/cgroup/system.slice') / unit / 'cgroup.procs'
+    return f.read_text().split() if f.exists() else []
+
+def ports(pids: list[str]) -> list[str]:
+    if not pids:
+        return []
+    out = run(['lsof', '-Pan', '-iTCP', '-sTCP:LISTEN', '-p', ','.join(pids)])
+    return sorted(set(re.findall(r':(\d+)\s*\(LISTEN\)', out)))
+
+for link in Path('/etc/systemd/system/multi-user.target.wants').glob('*.service'):
+    if not str(link.resolve()).startswith('/srv/'):
+        continue
+    unit = link.name
+    status = run(['systemctl', 'is-active', unit])
+    color = GREEN if status == 'active' else RED
+    port_list = ', '.join(ports(pids(unit))) or '–'
+    print(f' → {unit[:-8]:<20} - {color}{status}{NC}  {port_list}')
 
 
 # ############################################################
