@@ -14,7 +14,7 @@ ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarc
 
 readonly CONFIG_HOSTNAME=""
 readonly CONFIG_USERNAME="web"
-PACKAGES="htop btop unzip zip tree git build-essential nnn brotli fd-find ripgrep rename sqlite3 ncdu trash-cli jq tig"  #ffmpeg
+PACKAGES="htop btop unzip zip tree git build-essential nnn brotli rename sqlite3 ncdu trash-cli jq tig"  #ffmpeg
 
 #####################################################################
 ######################################################
@@ -62,7 +62,7 @@ ssh_prep() {
   chown -R $username:$username "/home/${username}/.ssh"
   sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config
   sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
-  systemctl -q restart ssh
+  systemctl reload sshd
 
   print_done
 }
@@ -92,23 +92,9 @@ EOF
   print_done
 }
 
-install_pandoc() {
-  VER=$(curl -s https://api.github.com/repos/jgm/pandoc/releases | jq -r '.[0].tag_name')
-  curl -SsL https://github.com/jgm/pandoc/releases/download/${VER}/pandoc-${VER}-1-${ARCH}.deb -o pandoc.deb
-  dpkg -i pandoc.deb
-  rm pandoc.deb
-}
-
 install_php() {
   echo -n "-> Installing PHP... "
   apt-get install -y php8.3-fpm php8.3-mbstring php8.3-sqlite3 php8.3-zip php8.3-curl # php8.3-gd php8.3-xml
-}
-
-install_mise() {
-  echo -n "-> Installing mise..."
-  curl -SsL https://mise.jdx.dev/mise-latest-linux-${ARCH} > /usr/local/bin/mise
-  chmod +x /usr/local/bin/mise
-  print_done
 }
 
 install_docker() {
@@ -135,6 +121,9 @@ main() {
   apt-get update
   apt-get -y upgrade
   apt-get install -y --no-install-recommends $PACKAGES
+
+  curl -SsL https://mise.jdx.dev/mise-latest-linux-${ARCH} > /usr/local/bin/mise
+  chmod +x /usr/local/bin/mise
 
   add_user $CONFIG_USERNAME
   ssh_prep
@@ -172,6 +161,9 @@ main
 user_script() {
   eval "$(mise activate --status bash)"
   mise settings experimental=true
+  mise use -g ubi:burntsushi/ripgrep ubi:sharkdp/fd
+  sudo ln -s $(which rg) /usr/local/bin/rg
+  sudo ln -s $(which fd) /usr/local/bin/fd
 
   mkdir -p /srv/{apps,conf} ~/.local/bin ~/.config
 
@@ -189,9 +181,9 @@ user_script() {
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/sqlite_upsert.py
-  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/print_caddy_hosts.py
+  wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/list_services_hosts.py
+  echo 'python ~/.local/list_services_hosts.py' >> ~/.bashrc
   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-  ln -s $(which fdfind) ~/.local/bin/fd
 
   cat <<'EOF' >> ~/.bashrc
 eval "$(mise activate --status bash)"
@@ -204,28 +196,7 @@ if [ "$PWD" == "$HOME" ]; then cd /srv/apps; fi
 HISTSIZE=9999999
 HISTFILESIZE=9999999
 export RIPGREP_CONFIG_PATH=~/.config/.ripgreprc
-
-function sv_status() {
-    GREEN='\033[0;32m'
-    RED='\033[0;31m'
-    NC='\033[0m' # No Color
-    echo -e '\033[1mServices'$NC
-
-    for symlink in /etc/systemd/system/multi-user.target.wants/*.service; do
-        target=$(readlink -f "$symlink")
-
-        if [[ $target == /srv/* ]]; then
-            service_name=$(basename "$symlink")
-            status=$(systemctl is-active "$service_name")
-            COLOR=$([[ $status == "active" ]] && echo $GREEN || echo $RED)
-            echo -e " → ${service_name%.service} - ${COLOR}$status${NC}"
-        fi
-    done
-}
-
-sv_status
-
-python ~/.local/print_caddy_hosts.py
+python ~/.local/list_services_hosts.py
 EOF
 
   cat <<EOF >> ~/.config/.ripgreprc
