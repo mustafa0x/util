@@ -161,7 +161,7 @@ main
 user_script() {
   eval "$(mise activate --status bash)"
   mise settings experimental=true
-  mise use -g ubi:burntsushi/ripgrep ubi:sharkdp/fd
+  mise use -g ubi:burntsushi/ripgrep ubi:sharkdp/fd ubi:starship/starship
   sudo ln -s $(which rg) /usr/local/bin/rg
   sudo ln -s $(which fd) /usr/local/bin/fd
 
@@ -197,6 +197,7 @@ HISTSIZE=9999999
 HISTFILESIZE=9999999
 export RIPGREP_CONFIG_PATH=~/.config/.ripgreprc
 python ~/.local/list_services_hosts.py
+eval "$(starship init bash)"
 EOF
 
   cat <<EOF >> ~/.config/.ripgreprc
@@ -204,6 +205,7 @@ EOF
 --max-columns-preview
 --smart-case
 EOF
+  echo -e '[directory]\ntruncation_length = 0\ntruncation_symbol = ""\ntruncate_to_repo=false' >> ~/.config/starship.toml
 
   mise use -g python@latest uv@latest nodejs@lts
   pip install ipython regex requests
@@ -215,8 +217,4 @@ EOF
 
   curl -SsL https://hishtory.dev/install.py | python - --offline
   ~/.hishtory/hishtory config-set enable-control-r false
-
-  curl -Ss https://starship.rs/install.sh | sh
-  echo 'eval "$(starship init bash)"' >> ~/.bashrc
-  echo -e '[directory]\ntruncation_length = 0\ntruncation_symbol = ""\ntruncate_to_repo=false' >> ~/.config/starship.toml
 }
