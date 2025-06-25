@@ -4,7 +4,6 @@ from urllib.error import URLError
 from urllib.request import urlopen
 from pathlib import Path
 
-LOCK, UNLOCK, ARROW = '🔒', '🔓', '➡️'
 BOLD = '\033[1m{}\033[0m'  # ANSI bold wrapper
 GREEN, RED, NC = '\033[0;32m', '\033[0;31m', '\033[0m'
 run = lambda cmd: subprocess.run(cmd, text=True, capture_output=True).stdout.strip()
@@ -94,11 +93,11 @@ grouped: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
 
 for srv in servers(cfg).values():
     has_tls = any(':443' in l or l.endswith('443') for l in srv.get('listen', []))
-    lock = '  ' if has_tls else UNLOCK
+    lock = '  ' if has_tls else 'X '
 
     for route in srv.get('routes', []):
         ports = sorted(rp_ports(route))
-        port_info = f' {ARROW} {", ".join(ports)}' if ports else ''
+        port_info = f' → {", ".join(ports)}' if ports else ''
         for host in host_list(route):
             domain, sub = split_host(host)
             grouped[domain].append((sub or '@', lock, port_info))
