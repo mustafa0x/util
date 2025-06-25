@@ -182,7 +182,6 @@ user_script() {
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/sqlite_upsert.py
   wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/list_services_hosts.py
-  echo 'python ~/.local/list_services_hosts.py' >> ~/.bashrc
   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
   cat <<'EOF' >> ~/.bashrc
