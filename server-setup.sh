@@ -122,8 +122,7 @@ main() {
   apt-get -y upgrade
   apt-get install -y --no-install-recommends $PACKAGES
 
-  curl -SsL https://mise.jdx.dev/mise-latest-linux-${ARCH} > /usr/local/bin/mise
-  chmod +x /usr/local/bin/mise
+  curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
 
   add_user $CONFIG_USERNAME
   ssh_prep
