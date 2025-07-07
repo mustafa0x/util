@@ -98,7 +98,7 @@ install_php() {
 }
 
 install_docker() {
-  curl -fsSL https://get.docker.com -o get-docker.sh && sh ./get-docker.sh
+  curl -fsSL https://get.docker.com | sh
   DOCKER_PLUGINS=/usr/libexec/docker/cli-plugins
   mkdir -p $DOCKER_PLUGINS
 
