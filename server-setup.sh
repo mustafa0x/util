@@ -62,7 +62,7 @@ ssh_prep() {
   chown -R $username:$username "/home/${username}/.ssh"
   sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config
   sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
-  systemctl reload sshd
+  systemctl reload ssh
 
   print_done
 }
@@ -141,7 +141,6 @@ main() {
   ##################
   install_caddy_server
   install_docker
-  install_mise
   # install_php
 
   apt-get autoremove -y
