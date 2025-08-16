@@ -20,6 +20,7 @@ parser.add_argument('file_new', nargs='?', help='The new file')
 parser.add_argument('-o', '--out', help='Save the diff to this file')
 parser.add_argument('-i', '--input', help='Manually input old and new text', action='store_true')
 parser.add_argument('-s', '--separator', help='The separator to use between diffs', default='\n---\n')
+parser.add_argument('--rtl', help='set html[dir=rtl]', action='store_true')
 parser.add_argument('--max', help='The max size of the diff in mb', type=int, default=5)
 args = parser.parse_args()
 
@@ -108,6 +109,8 @@ output = apply_repls(output, [
 with nullcontext(Path(args.out)) if args.out else tmpfile(suffix='.html') as diff_file:
     fh = diff_file.open('w')
     header, footer = viewer.read_text().split('<!-- SPLIT_AT -->')
+    if args.rtl:
+        header = header.replace('<html>', '<html dir=rtl>')
     header += f'<title>{args.file_old} -> {args.file_new}</title>'
     fh.write(header + '\n')
     fh.write(output)
