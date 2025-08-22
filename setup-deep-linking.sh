@@ -6,7 +6,7 @@ set -euxo pipefail
 #   1. Visit https://developer.apple.com/account/resources/identifiers/list
 #   2. Open the App ID
 #   3. Enable Associated Domains
-# 2. https://capacitorjs.com/docs/guides/deep-links#add-associated-domain
+# 2. Add in xcode (see https://capacitorjs.com/docs/guides/deep-links#add-associated-domain)
 
 # Docs
 # - https://developer.android.com/training/app-links/verify-android-applinks
