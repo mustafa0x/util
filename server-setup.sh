@@ -159,7 +159,7 @@ main
 user_script() {
   eval "$(mise activate --status bash)"
   mise settings experimental=true
-  mise use -g ubi:burntsushi/ripgrep ubi:sharkdp/fd ubi:starship/starship
+  mise use -g aqua:burntsushi/ripgrep aqua:sharkdp/fd aqua:starship/starship
   sudo ln -s $(which rg) /usr/local/bin/rg
   sudo ln -s $(which fd) /usr/local/bin/fd
 
