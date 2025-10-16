@@ -4,10 +4,16 @@
 #   "rich",
 # ]
 # ///
-import json, os, re, subprocess, sys, time
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
 from rich.console import Console
 from rich.errors import MarkupError
-from pathlib import Path
 
 console = Console()
 p = subprocess.run(['pnpx', 'svelte-check', '--output', 'machine-verbose'], capture_output=True, text=True)
