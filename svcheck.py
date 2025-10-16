@@ -17,11 +17,15 @@ files_scanned, ts_completed = 0, None
 errors = warnings = 0
 files_with_problems: set[str] = set()
 git_ignore_cache: dict[str, bool] = {}
-IGNORE_PATH = 'src/lib/components/ui/'
+IGNORE_PATH: list[str] = [
+    'src/lib/components/ui/',
+    'client/lib/components/ui/',
+    *[s.strip().replace('\\', '/') for s in os.getenv('SVCHECK_IGNORE_PATHS', '').split(',') if s.strip()],
+]
 
 ignore_keys: set[tuple] = set()
 ignore_file = Path('svcheck-errors.json')
-for line in (ignore_file.read_text().splitlines() if ignore_file.exists() else []):
+for line in ignore_file.read_text().splitlines() if ignore_file.exists() else []:
     line = line.strip()
     if not line or line[0] != '{':
         continue
@@ -67,7 +71,7 @@ for line in p.stdout.splitlines():
     if t not in {'ERROR', 'WARNING'}:
         continue
     fn = (j.get('filename') or '').replace('\\', '/')
-    if fn.startswith(IGNORE_PATH):
+    if any(fn.startswith(p) for p in IGNORE_PATH):
         continue
 
     start = j.get('start') or {}
