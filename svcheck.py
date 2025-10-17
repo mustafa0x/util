@@ -1,9 +1,14 @@
+#!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
 #   "rich",
 # ]
 # ///
+"""
+To generate svcheck-errors.json:
+- `pnpx svelte-check --output machine-verbose 2>&1 | sed -E '1d;$d;s/^[0-9]+ //' > svcheck-errors.json`
+"""
 import json
 import os
 import re
