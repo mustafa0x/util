@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 Determines which files on remote aren't tracked by local nor ignored.
