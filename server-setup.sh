@@ -159,7 +159,7 @@ main
 user_script() {
   eval "$(mise activate --status bash)"
   mise settings experimental=true
-  mise use -g aqua:burntsushi/ripgrep aqua:sharkdp/fd aqua:starship/starship
+  mise use -g github:burntsushi/ripgrep ubi:sharkdp/fd ubi:starship/starship
   sudo ln -s $(which rg) /usr/local/bin/rg
   sudo ln -s $(which fd) /usr/local/bin/fd
 
@@ -186,7 +186,7 @@ user_script() {
 eval "$(mise activate --status bash)"
 alias dc='docker compose'
 alias n='nnn -de'
-alias ipy=ipython3
+alias ipy=ipython
 alias s='sudo systemctl'
 alias r='mise run'
 if [ "$PWD" == "$HOME" ]; then cd /srv/apps; fi
@@ -204,13 +204,10 @@ EOF
 EOF
   echo -e '[directory]\ntruncation_length = 0\ntruncation_symbol = ""\ntruncate_to_repo=false' >> ~/.config/starship.toml
 
-  mise use -g python@latest uv@latest nodejs@lts
+  mise use -g python uv nodejs@lts pnpm
+  eval "$(mise activate --status bash)"  # unclear why this needed (`mise reshim` didn't help)
   pip install ipython regex requests
-
-  npm install -g npm@latest
-  npm install -g pnpm
-  pnpm setup
-  pnpm install -g zx
+  npm install -g npm
 
   curl -SsL https://hishtory.dev/install.py | python - --offline
   ~/.hishtory/hishtory config-set enable-control-r false
