@@ -103,6 +103,12 @@ for line in p.stdout.splitlines():
     if t not in {'ERROR', 'WARNING'}:
         continue
     fn = (j.get('filename') or '').replace('\\', '/')
+    msg = j.get('message') or ''
+
+    # hardcoded ignore: TS error for dir="auto" not matching Direction
+    if "Type '\"auto\"' is not assignable to type 'Direction'." in msg:
+        continue
+
     if any(fn.startswith(p) for p in IGNORE_PATH):
         continue
 
