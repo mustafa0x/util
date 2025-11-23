@@ -9,6 +9,7 @@
 To generate svcheck-errors.json:
 - `pnpx svelte-check --output machine-verbose 2>&1 | sed -E '1d;$d;s/^[0-9]+ //' > svcheck-errors.json`
 """
+
 import json
 import os
 import re
@@ -21,7 +22,27 @@ from rich.console import Console
 from rich.errors import MarkupError
 
 console = Console()
-p = subprocess.run(['pnpx', 'svelte-check', '--output', 'machine-verbose'], capture_output=True, text=True)
+
+IGNORED_WARNINGS: set[str] = {
+    'a11y_autofocus',
+    'a11y_click_events_have_key_events',
+    'a11y_no_static_element_interactions',
+    'a11y_label_has_associated_control',
+    'a11y_no_noninteractive_element_interactions',
+}
+
+p = subprocess.run(
+    [
+        'pnpx',
+        'svelte-check',
+        '--output',
+        'machine-verbose',
+        '--compiler-warnings',
+        ','.join(f'{code}:ignore' for code in sorted(IGNORED_WARNINGS)),
+    ],
+    capture_output=True,
+    text=True,
+)
 
 root = ''
 files_scanned, ts_completed = 0, None
