@@ -2,8 +2,18 @@
 
 set -euxo pipefail
 
-[ "$EUID" -ne 0 ] && echo "Please run as root" && exit 1
+# Allow non-root only for the explicit user phase
+if [[ "${1:-}" != "--as-user-phase" ]] && [ "$EUID" -ne 0 ]; then
+  echo "Please run as root"
+  exit 1
+fi
 export DEBIAN_FRONTEND=noninteractive
+
+# ---------- Minimal checkpoints ----------
+SCRIPT_PATH=$(readlink -f "$0" 2>/dev/null || echo "$0")
+STATE_FILE=/var/tmp/server-setup.stage
+STAGE=$(cat "$STATE_FILE" 2>/dev/null || echo 0)
+# ----------------------------------------
 
 ARCH_RAW=$(uname -m)
 ARCH=$([[ "$ARCH_RAW" == "x86_64" ]] && echo "amd64" || ([[ "$ARCH_RAW" == "aarch64" ]] && echo "arm64" || (echo "Unsupported architecture: $ARCH_RAW" >&2 && return 1)))
@@ -151,15 +161,13 @@ main() {
   chown -R $CONFIG_USERNAME:$CONFIG_USERNAME /srv
 }
 
-main
-
 ##################
 # User script
 ##################
 user_script() {
   eval "$(mise activate --status bash)"
   mise settings experimental=true
-  mise use -g github:burntsushi/ripgrep ubi:sharkdp/fd ubi:starship/starship
+  mise use -g github:burntsushi/ripgrep github:sharkdp/fd github:starship/starship
   sudo ln -s $(which rg) /usr/local/bin/rg
   sudo ln -s $(which fd) /usr/local/bin/fd
 
@@ -205,10 +213,53 @@ EOF
   echo -e '[directory]\ntruncation_length = 0\ntruncation_symbol = ""\ntruncate_to_repo=false' >> ~/.config/starship.toml
 
   mise use -g python uv nodejs@lts pnpm
-  eval "$(mise activate --status bash)"  # unclear why this needed (`mise reshim` didn't help)
-  pip install ipython regex requests
-  npm install -g npm
+  # Non-interactive scripts do not reliably trigger hook-env/PROMPT_COMMAND between commands.
+  mise x -- python -m pip install ipython regex requests
+  mise x -- npm install -g npm
 
-  curl -SsL https://hishtory.dev/install.py | python - --offline
+  curl -SsL https://hishtory.dev/install.py | mise x -- python - --offline
   ~/.hishtory/hishtory config-set enable-control-r false
 }
+
+########################################
+########## Minimal 3-run flow ##########
+########################################
+
+# If invoked for user-phase explicitly, run (allowed as non-root) and finish.
+if [[ "${1:-}" == "--as-user-phase" ]]; then
+  user_script
+  sudo rm -f "$STATE_FILE" || true
+  echo "All done."
+  exit 0
+fi
+
+echo "[checkpoint] current stage: $STAGE"
+
+case "$STAGE" in
+  0)
+    echo "[stage 0] system update/upgrade"
+    apt-get update
+    apt-get upgrade -y
+    echo 1 > "$STATE_FILE"
+    echo "[checkpoint] advanced to stage 1 — run this script again as root."
+    exit 0
+    ;;
+  1)
+    echo "[stage 1] root phase (main)"
+    main
+    echo 2 > "$STATE_FILE"
+    echo "[checkpoint] advanced to stage 2."
+    echo "Now run user-phase as $CONFIG_USERNAME:"
+    echo "    sudo -u $CONFIG_USERNAME \"$SCRIPT_PATH\" --as-user-phase"
+    exit 0
+    ;;
+  2)
+    echo "[stage 2] awaiting user-phase: run as $CONFIG_USERNAME:"
+    echo "    sudo -u $CONFIG_USERNAME \"$SCRIPT_PATH\" --as-user-phase"
+    exit 0
+    ;;
+  *)
+    echo "Unknown stage '$STAGE'. Reset with: rm -f $STATE_FILE" >&2
+    exit 1
+    ;;
+esac
