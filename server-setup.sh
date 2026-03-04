@@ -184,6 +184,9 @@ user_script() {
   (cd conf; git init && git add . && git commit -m init)
 
   sudo service caddy restart
+  sudo setfacl -m "u:web:r--" "/var/log/caddy"/*.log
+  sudo setfacl -d -m "u:web:r--" "/var/log/caddy"
+  getfacl -p "/var/log/caddy" | rg "^default:user:web:r--$"
   sudo update-alternatives --set editor /usr/bin/vim.basic
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all
   # wget -P ~/.local/ https://raw.githubusercontent.com/mustafa0x/util/main/sqlite_upsert.py
