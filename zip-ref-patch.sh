@@ -41,6 +41,46 @@ find_zip_root() {
     printf '%s\n' "$extracted_dir"
 }
 
+# Drop file diff blocks that are binary-only so the resulting patch stays text/apply-able.
+drop_binary_hunks() {
+    local raw_patch=$1
+
+    awk '
+        function flush_block() {
+            if (!in_diff) {
+                return
+            }
+            if (!is_binary) {
+                printf "%s", block
+            }
+            block = ""
+        }
+
+        /^diff --git / {
+            flush_block()
+            in_diff = 1
+            is_binary = 0
+            block = $0 ORS
+            next
+        }
+
+        {
+            if (!in_diff) {
+                print
+                next
+            }
+            block = block $0 ORS
+            if ($0 == "GIT binary patch" || $0 ~ /^Binary files .* differ$/) {
+                is_binary = 1
+            }
+        }
+
+        END {
+            flush_block()
+        }
+    ' "$raw_patch"
+}
+
 normalize_patch() {
     local raw_patch=$1
 
@@ -111,6 +151,8 @@ mv "$tmp_dir/export" "$tmp_dir/compare/before"
 mv "$zip_root" "$tmp_dir/compare/after"
 
 raw_patch="$tmp_dir/raw.patch"
+filtered_patch="$tmp_dir/filtered.patch"
+normalized_patch="$tmp_dir/normalized.patch"
 
 set +e
 (
@@ -124,12 +166,15 @@ if [[ $diff_status -gt 1 ]]; then
     fail 'git diff --no-index failed'
 fi
 
+drop_binary_hunks "$raw_patch" > "$filtered_patch"
+normalize_patch "$filtered_patch" > "$normalized_patch"
+
 if [[ -n $output_path ]]; then
     mkdir -p "$(dirname "$output_path")"
-    normalize_patch "$raw_patch" > "$output_path"
+    cp "$normalized_patch" "$output_path"
     patch_target=$output_path
 else
-    normalize_patch "$raw_patch"
+    cat "$normalized_patch"
     patch_target='stdout'
 fi
 
@@ -138,9 +183,8 @@ echo "Patch output: $patch_target" >&2
 
 if [[ $diff_status -eq 0 ]]; then
     echo 'No differences found' >&2
+elif ! grep -q '^diff --git ' "$filtered_patch"; then
+    echo 'Only binary differences found; patch is empty' >&2
 else
-    (
-        cd "$tmp_dir/compare"
-        git diff --no-index --stat before after || true
-    ) >&2
+    git apply --stat "$normalized_patch" >&2 || true
 fi
