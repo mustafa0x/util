@@ -85,16 +85,16 @@ normalize_patch() {
     local raw_patch=$1
 
     perl -pe "
-        s{^(diff --git )a/before/}{\${1}a/};
-        s{ b/after/}{ b/} if /^diff --git /;
-        s{^(--- )a/before/}{\${1}a/};
-        s{^(\\+\\+\\+ )b/after/}{\${1}b/};
-        s{^(rename from )before/}{\${1}};
-        s{^(rename to )after/}{\${1}};
-        s{^(copy from )before/}{\${1}};
-        s{^(copy to )after/}{\${1}};
-        s{^(Binary files )a/before/}{\${1}a/};
-        s{ and b/after/}{ and b/} if /^Binary files /;
+        s{^(diff --git )a/(?:before|after)/}{\${1}a/};
+        s{ b/(?:before|after)/}{ b/} if /^diff --git /;
+        s{^(--- )a/(?:before|after)/}{\${1}a/};
+        s{^(\\+\\+\\+ )b/(?:before|after)/}{\${1}b/};
+        s{^(rename from )(?:before|after)/}{\${1}};
+        s{^(rename to )(?:before|after)/}{\${1}};
+        s{^(copy from )(?:before|after)/}{\${1}};
+        s{^(copy to )(?:before|after)/}{\${1}};
+        s{^(Binary files )a/(?:before|after)/}{\${1}a/};
+        s{ and b/(?:before|after)/}{ and b/} if /^Binary files /;
     " "$raw_patch"
 }
 
