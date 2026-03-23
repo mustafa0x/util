@@ -141,7 +141,9 @@ trap 'rm -rf "$tmp_dir"' EXIT
 
 mkdir -p "$tmp_dir/export" "$tmp_dir/unzip"
 
-git archive "$base_rev" | tar -x -C "$tmp_dir/export"
+# Export the full commit tree without honoring export-ignore attributes.
+GIT_INDEX_FILE="$tmp_dir/base.index" git read-tree "$base_rev"
+GIT_INDEX_FILE="$tmp_dir/base.index" git checkout-index -a --prefix="$tmp_dir/export/"
 unzip -q "$zip_path" -d "$tmp_dir/unzip"
 
 zip_root=$(find_zip_root "$tmp_dir/unzip")
