@@ -3,16 +3,18 @@ set -euo pipefail
 
 usage() {
     cat <<'USAGE'
-Usage: zip-ref-patch [--output PATCH_FILE] ZIP_PATH BASE_REV
+Usage: zip-ref-patch [--output PATCH_FILE] ZIP_PATH [BASE_REV]
 
 Create a repo-relative patch by comparing a zip snapshot against `git archive BASE_REV`.
+If BASE_REV is omitted, it is read from the zip's top-level `GIT_REF` file.
 
 Examples:
+  zip-ref-patch ~/Downloads/kunuz.zip
   zip-ref-patch ~/Downloads/kunuz.zip 9c6c83a
-  zip-ref-patch --output /tmp/kunuz.patch ~/Downloads/kunuz.zip 9c6c83a
+  zip-ref-patch --output /tmp/kunuz.patch ~/Downloads/kunuz.zip
 
 Review/apply flow:
-  zip-ref-patch --output /tmp/import.patch repo.zip 9c6c83a
+  zip-ref-patch --output /tmp/import.patch repo.zip
   git apply --stat /tmp/import.patch
   git apply --check /tmp/import.patch
   git apply /tmp/import.patch
@@ -22,6 +24,24 @@ USAGE
 fail() {
     echo "$*" >&2
     exit 1
+}
+
+read_zip_git_ref() {
+    local zip_path=$1
+    local raw ref
+
+    raw=$(unzip -p "$zip_path" GIT_REF 2>/dev/null || true)
+    [[ -n $raw ]] || fail "Missing GIT_REF in zip: $zip_path"
+
+    raw=$(printf '%s\n' "$raw" | tr -d '\r' | sed -n '1p')
+    if [[ $raw == git_short_ref=* ]]; then
+        ref=${raw#git_short_ref=}
+    else
+        ref=$raw
+    fi
+
+    [[ -n $ref ]] || fail "GIT_REF in zip is empty: $zip_path"
+    printf '%s\n' "$ref"
 }
 
 find_zip_root() {
@@ -88,7 +108,7 @@ normalize_patch() {
         s{^(diff --git )a/(?:before|after)/}{\${1}a/};
         s{ b/(?:before|after)/}{ b/} if /^diff --git /;
         s{^(--- )a/(?:before|after)/}{\${1}a/};
-        s{^(\\+\\+\\+ )b/(?:before|after)/}{\${1}b/};
+        s{^(\+\+\+ )b/(?:before|after)/}{\${1}b/};
         s{^(rename from )(?:before|after)/}{\${1}};
         s{^(rename to )(?:before|after)/}{\${1}};
         s{^(copy from )(?:before|after)/}{\${1}};
@@ -124,16 +144,21 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-[[ $# -eq 2 ]] || {
+[[ $# -eq 1 || $# -eq 2 ]] || {
     usage >&2
     exit 1
 }
 
 zip_path=$1
-base_rev=$2
+base_rev=${2:-}
 
 [[ -f $zip_path ]] || fail "Zip not found: $zip_path"
 command -v unzip >/dev/null || fail 'unzip is required'
+
+if [[ -z $base_rev ]]; then
+    base_rev=$(read_zip_git_ref "$zip_path")
+fi
+
 git rev-parse --verify "${base_rev}^{commit}" >/dev/null 2>&1 || fail "Unknown git revision: $base_rev"
 
 tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/zip-ref-patch.XXXXXX")
@@ -151,6 +176,9 @@ zip_root=$(find_zip_root "$tmp_dir/unzip")
 mkdir -p "$tmp_dir/compare"
 mv "$tmp_dir/export" "$tmp_dir/compare/before"
 mv "$zip_root" "$tmp_dir/compare/after"
+
+# Ignore zip metadata marker so patch only reflects repo files.
+rm -f "$tmp_dir/compare/after/GIT_REF"
 
 raw_patch="$tmp_dir/raw.patch"
 filtered_patch="$tmp_dir/filtered.patch"
