@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 import unicodedata
 from dataclasses import dataclass
@@ -43,42 +44,55 @@ def parse_args() -> argparse.Namespace:
         '-o',
         '--output',
         type=Path,
-        help='Output Markdown path (defaults to the input path with a .md suffix)',
+        help='Output Markdown path (default: input path with .md suffix, or ~/Downloads/<slugified-title>.md for stdin)',
     )
     parser.add_argument(
         '--include-hidden',
         action='store_true',
-        help='Include visually hidden system/model/context messages',
+        help='Include visually hidden system/model/context messages (default: off)',
     )
     parser.add_argument(
         '--include-reasoning',
         action='store_true',
-        help='Include reasoning recap and thoughts entries',
+        help='Include reasoning recap and thoughts entries (default: off)',
     )
     parser.add_argument(
         '--artifacts',
         choices=['omit', 'include'],
         default='omit',
-        help='Omit or include internal code/tool execution artifacts',
+        help='Omit or include internal code/tool execution artifacts (default: omit)',
     )
     parser.add_argument(
         '--assistant-text',
         choices=['final', 'all'],
         default='final',
-        help='Keep only the final assistant text reply per turn or all assistant text entries',
+        help='Keep only the final assistant text reply per turn or all assistant text entries (default: final)',
     )
     parser.add_argument(
         '--user-messages',
         choices=['include', 'omit'],
         default='include',
-        help='Include or omit user messages in the transcript',
+        help='Include or omit user messages in the transcript (default: include)',
     )
     parser.add_argument(
         '--timestamps',
         choices=['omit', 'include'],
         default='omit',
-        help='Omit or include timestamps in the transcript',
+        help='Omit or include timestamps in the transcript (default: omit)',
     )
+    parser.add_argument(
+        '--reveal',
+        dest='reveal',
+        action='store_true',
+        help='Reveal the output file in Finder using `open -R` (default: on)',
+    )
+    parser.add_argument(
+        '--no-reveal',
+        dest='reveal',
+        action='store_false',
+        help='Do not reveal the output file in Finder',
+    )
+    parser.set_defaults(reveal=True)
     return parser.parse_args()
 
 
@@ -107,6 +121,8 @@ def main() -> None:
     )
     output_path.write_text(markdown)
     print(f'Wrote {output_path}')
+    if args.reveal:
+        reveal_in_finder(output_path)
 
 
 def load_export(input_path: Path | None) -> tuple[dict, str]:
@@ -141,6 +157,18 @@ def slugify_title(title: str) -> str:
     ascii_only = normalized.encode('ascii', 'ignore').decode().lower()
     slug = re.sub(r'[^a-z0-9]+', '-', ascii_only).strip('-')
     return re.sub(r'-{2,}', '-', slug)
+
+
+def reveal_in_finder(path: Path) -> None:
+    try:
+        subprocess.run(
+            ['open', '-R', str(path)],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        pass
 
 
 def get_active_path(export: dict) -> list[str]:
