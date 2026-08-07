@@ -1,0 +1,13 @@
+[settings]
+experimental = true
+
+[tools]
+fd = "latest"
+fzf = "latest"
+hishtory = "latest"
+node = "lts"
+pnpm = "latest"
+python = "latest"
+ripgrep = "latest"
+starship = "latest"
+uv = "latest"

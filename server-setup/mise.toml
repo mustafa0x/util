@@ -1,0 +1,176 @@
+[settings]
+experimental = true
+system_packages.managers = ["apt"]
+
+[bootstrap.groups.web]
+
+[bootstrap.groups.docker]
+system = true
+
+[bootstrap.users.web]
+group = "web"
+groups = ["sudo", "docker"]
+home = "/home/web"
+shell = "/bin/bash"
+create_home = true
+
+[bootstrap.packages]
+"apt:acl" = "latest"
+"apt:brotli" = "latest"
+"apt:btop" = "latest"
+"apt:build-essential" = "latest"
+"apt:caddy" = "latest"
+"apt:docker-buildx" = "latest"
+"apt:docker-compose-v2" = "latest"
+"apt:docker.io" = "latest"
+"apt:git" = "latest"
+"apt:htop" = "latest"
+"apt:jq" = "latest"
+"apt:ncdu" = "latest"
+"apt:nnn" = "latest"
+"apt:rename" = "latest"
+"apt:sqlite3" = "latest"
+"apt:tig" = "latest"
+"apt:trash-cli" = "latest"
+"apt:tree" = "latest"
+"apt:unzip" = "latest"
+"apt:zip" = "latest"
+
+[bootstrap.hooks.pre-packages]
+run = '''
+set -eu
+sudo install -d -o web -g web -m 0700 /home/web/.ssh
+sudo test -f /root/.ssh/authorized_keys
+sudo install -o web -g web -m 0600 /root/.ssh/authorized_keys /home/web/.ssh/authorized_keys
+'''
+
+[bootstrap.directories."/srv"]
+owner = "web"
+group = "web"
+mode = "0755"
+
+[bootstrap.directories."/srv/apps"]
+owner = "web"
+group = "web"
+mode = "0755"
+
+[bootstrap.directories."/srv/conf"]
+owner = "web"
+group = "web"
+mode = "0755"
+
+[bootstrap.directories."/var/log/caddy"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.directories."/etc/systemd/system/caddy.service.d"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.files."/etc/sudoers.d/web"]
+content = "web ALL=(ALL) NOPASSWD: ALL\n"
+owner = "root"
+group = "root"
+mode = "0440"
+
+[bootstrap.files."/etc/ssh/sshd_config.d/99-server-setup.conf"]
+content = '''
+PermitRootLogin no
+PasswordAuthentication no
+'''
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["ssh"]
+
+[bootstrap.files."/etc/systemd/system/caddy.service.d/override.conf"]
+content = '''
+[Service]
+ExecStart=
+ExecStart=/usr/bin/caddy run --environ --config /srv/conf/Caddyfile
+ExecReload=
+ExecReload=/usr/bin/caddy reload --config /srv/conf/Caddyfile --force
+LimitNOFILE=1048576:1048576
+StandardOutput=append:/var/log/caddy/caddy.log
+StandardError=append:/var/log/caddy/caddy-error.log
+'''
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["caddy"]
+
+[bootstrap.files."/srv/conf/Caddyfile"]
+content = '''
+{
+	email nuqayah@gmail.com
+}
+import *.caddy
+'''
+owner = "web"
+group = "web"
+mode = "0644"
+notify = ["caddy"]
+
+[bootstrap.services.ssh]
+state = "running"
+enabled = true
+on_change = "reload"
+
+[bootstrap.services.caddy]
+state = "running"
+enabled = true
+on_change = "reload_or_restart"
+
+[bootstrap.services.docker]
+state = "running"
+enabled = true
+
+[bootstrap.linux.firewall]
+backend = "ufw"
+state = "enabled"
+default_incoming = "deny"
+default_outgoing = "allow"
+
+[[bootstrap.linux.firewall.rules]]
+name = "ssh"
+port = 22
+protocol = "tcp"
+action = "allow"
+
+[[bootstrap.linux.firewall.rules]]
+name = "http"
+port = 80
+protocol = "tcp"
+action = "allow"
+
+[[bootstrap.linux.firewall.rules]]
+name = "https"
+port = 443
+protocol = "tcp"
+action = "allow"
+
+[bootstrap.mise_shell_activate]
+bashrc = "activate"
+
+[dotfiles]
+"~/.bashrc/server-setup" = { source = "dotfiles/bashrc", template = "tera" }
+"~/.config/.ripgreprc" = { source = "dotfiles/ripgreprc", mode = "copy" }
+"~/.config/starship.toml" = { source = "dotfiles/starship.toml", mode = "copy" }
+"~/.config/mise/config.toml" = { source = "dotfiles/mise.toml", mode = "copy" }
+
+[tools]
+fd = "latest"
+fzf = "latest"
+hishtory = "latest"
+node = "lts"
+pnpm = "latest"
+python = "latest"
+ripgrep = "latest"
+starship = "latest"
+uv = "latest"
+
+[tasks.bootstrap]
+run = "./user-bootstrap.sh"
+env = { MISE_BOOTSTRAP_BIN = "{{ mise_bin }}" }
